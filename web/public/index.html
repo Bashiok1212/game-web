@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>妖灵151 - 联机游戏</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <h1 class="logo">妖灵151</h1>
+    <nav class="nav">
+      <span id="userInfo" class="user-info hidden"></span>
+      <button id="btnChangePwd" class="btn btn-ghost hidden">修改密码</button>
+      <button id="btnLogout" class="btn btn-ghost hidden">退出</button>
+      <button id="btnLogin" class="btn btn-ghost">登录</button>
+      <button id="btnRegister" class="btn btn-primary">注册</button>
+    </nav>
+  </header>
+
+  <main class="main">
+    <!-- 主页：游戏介绍 -->
+    <section id="homePage" class="home-page">
+      <div class="hero">
+        <h2>欢迎来到妖灵151</h2>
+        <p class="hero-desc">一款即将上线的联机游戏，与好友一起畅玩</p>
+        <div class="hero-actions" id="heroActions">
+          <button id="btnJoinGame" class="btn btn-primary btn-lg">立即加入</button>
+          <p class="hero-hint">注册账号即可参与游戏</p>
+        </div>
+        <div class="hero-actions hidden" id="heroLoggedIn">
+          <p class="hero-welcome">欢迎回来，<span id="heroUsername"></span></p>
+          <p class="hero-hint">游戏即将上线，敬请期待</p>
+          <section class="characters-section" id="charactersSection">
+            <h3>我的角色</h3>
+            <div class="characters-list" id="charactersList"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- 登录/注册表单（弹层，默认隐藏） -->
+    <div id="authOverlay" class="auth-overlay hidden">
+      <div class="auth-modal">
+        <button class="auth-close" id="btnCloseAuth" aria-label="关闭">&times;</button>
+        <div id="loginForm" class="form-card hidden">
+          <h3>登录</h3>
+          <form id="formLogin" autocomplete="on" novalidate>
+            <input type="text" name="login" placeholder="用户名或邮箱" maxlength="254" autocomplete="username">
+            <input type="password" name="password" placeholder="密码" maxlength="128" autocomplete="current-password">
+            <button type="submit" class="btn btn-primary btn-block">登录</button>
+          </form>
+          <p class="form-switch">还没有账号？<a href="#" id="linkRegister">立即注册</a></p>
+        </div>
+        <div id="registerForm" class="form-card hidden">
+          <h3>注册</h3>
+          <form id="formRegister" autocomplete="on" novalidate>
+            <input type="text" name="username" placeholder="用户名（3-20位）" minlength="3" maxlength="20" autocomplete="username">
+            <input type="email" name="email" placeholder="邮箱" maxlength="254" autocomplete="email">
+            <input type="password" name="password" placeholder="密码（至少6位）" minlength="6" maxlength="128" autocomplete="new-password">
+            <button type="submit" class="btn btn-primary btn-block" id="btnRegisterSubmit">注册</button>
+          </form>
+          <p class="form-switch">已有账号？<a href="#" id="linkLogin">去登录</a></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 修改密码弹层 -->
+    <div id="pwdOverlay" class="auth-overlay hidden">
+      <div class="auth-modal">
+        <button class="auth-close" id="btnClosePwd" aria-label="关闭">&times;</button>
+        <div class="form-card">
+          <h3>修改密码</h3>
+          <form id="formChangePwd" novalidate>
+            <input type="password" name="currentPassword" placeholder="当前密码" maxlength="128" autocomplete="current-password">
+            <input type="password" name="newPassword" placeholder="新密码（至少6位）" minlength="6" maxlength="128" autocomplete="new-password">
+            <input type="password" name="confirmPassword" placeholder="确认新密码" maxlength="128" autocomplete="new-password">
+            <button type="submit" class="btn btn-primary btn-block" id="btnPwdSubmit">确认修改</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="message" class="message hidden"></div>
+  </main>
+
+  <footer class="footer">
+    <p>© 妖灵151 · 联机游戏</p>
+    <p><a href="/admin" class="footer-link">管理后台</a></p>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

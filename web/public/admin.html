@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 - 妖灵151</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <header class="header admin-header">
+    <h1 class="logo">管理后台</h1>
+    <nav class="nav">
+      <span id="serverTime" class="server-time" title="服务器时间"></span>
+      <span id="adminUser" class="user-info"></span>
+      <a href="/" class="btn btn-ghost">返回首页</a>
+      <button id="btnLogout" class="btn btn-ghost">退出</button>
+    </nav>
+  </header>
+
+  <main class="main admin-main">
+    <div id="loginSection" class="admin-login">
+      <div class="form-card">
+        <h3>管理员登录</h3>
+        <form id="formAdminLogin">
+          <input type="text" name="login" placeholder="用户名或邮箱" required>
+          <input type="password" name="password" placeholder="密码" required>
+          <button type="submit" class="btn btn-primary btn-block">登录</button>
+        </form>
+        <p id="loginError" class="form-error hidden"></p>
+      </div>
+    </div>
+
+    <div id="dashboardSection" class="admin-dashboard hidden">
+      <nav class="admin-tabs">
+        <button type="button" class="admin-tab active" data-tab="users">用户管理</button>
+        <button type="button" class="admin-tab" data-tab="spirits">妖灵管理</button>
+        <button type="button" class="admin-tab" data-tab="skills">技能管理</button>
+        <button type="button" class="admin-tab" data-tab="items">物品管理</button>
+        <button type="button" class="admin-tab" data-tab="characters">角色管理</button>
+        <button type="button" class="admin-tab" data-tab="playerItems">玩家物品</button>
+        <button type="button" class="admin-tab" data-tab="festivals" id="tabFestivalsBtn">节日管理</button>
+        <button type="button" class="admin-tab" data-tab="logs">操作日志</button>
+      </nav>
+
+      <section id="tabUsers" class="admin-tab-panel active">
+        <div class="admin-stats">
+          <div class="stat-card">
+            <span class="stat-value" id="statTotal">0</span>
+            <span class="stat-label">总用户数</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="statNewToday">0</span>
+            <span class="stat-label">今日新增</span>
+          </div>
+        </div>
+        <section class="admin-users">
+          <h3>用户列表</h3>
+          <div class="users-table-wrap">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>用户名</th>
+                  <th>邮箱</th>
+                  <th>角色</th>
+                  <th>注册时间</th>
+                  <th>最后登录</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="tabSpirits" class="admin-tab-panel">
+        <div class="spirits-toolbar">
+          <div class="spirits-search">
+            <input type="text" id="spiritSearch" placeholder="搜索编号或名称" maxlength="64">
+            <select id="spiritTypeFilter">
+              <option value="">全部属性</option>
+              <option value="火">火</option>
+              <option value="水">水</option>
+              <option value="草">草</option>
+              <option value="电">电</option>
+              <option value="冰">冰</option>
+              <option value="格斗">格斗</option>
+              <option value="毒">毒</option>
+              <option value="地面">地面</option>
+              <option value="飞行">飞行</option>
+              <option value="超能">超能</option>
+              <option value="虫">虫</option>
+              <option value="岩石">岩石</option>
+              <option value="幽灵">幽灵</option>
+              <option value="龙">龙</option>
+              <option value="恶">恶</option>
+              <option value="钢">钢</option>
+              <option value="妖精">妖精</option>
+            </select>
+            <select id="spiritSort">
+              <option value="number-asc">编号 ↑</option>
+              <option value="number-desc">编号 ↓</option>
+              <option value="name-asc">名称 ↑</option>
+              <option value="name-desc">名称 ↓</option>
+            </select>
+            <button type="button" id="btnSpiritSearch" class="btn btn-primary">搜索</button>
+          </div>
+          <button type="button" id="btnAddSpirit" class="btn btn-primary">+ 添加妖灵</button>
+        </div>
+        <div class="spirits-table-wrap">
+          <table class="spirits-table">
+            <thead>
+              <tr>
+                <th>图鉴</th>
+                <th>图片</th>
+                <th>名称</th>
+                <th>属性</th>
+                <th>HP</th>
+                <th>攻击</th>
+                <th>防御</th>
+                <th>特攻</th>
+                <th>特防</th>
+                <th>速度</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="spiritsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="tabSkills" class="admin-tab-panel">
+        <div class="spirits-toolbar">
+          <div class="spirits-search">
+            <input type="text" id="skillSearch" placeholder="搜索编号或名称" maxlength="64">
+            <select id="skillTypeFilter">
+              <option value="">全部属性</option>
+              <option value="火">火</option>
+              <option value="水">水</option>
+              <option value="草">草</option>
+              <option value="电">电</option>
+              <option value="冰">冰</option>
+              <option value="格斗">格斗</option>
+              <option value="毒">毒</option>
+              <option value="地面">地面</option>
+              <option value="飞行">飞行</option>
+              <option value="超能">超能</option>
+              <option value="虫">虫</option>
+              <option value="岩石">岩石</option>
+              <option value="幽灵">幽灵</option>
+              <option value="龙">龙</option>
+              <option value="恶">恶</option>
+              <option value="钢">钢</option>
+              <option value="妖精">妖精</option>
+            </select>
+            <select id="skillCategoryFilter">
+              <option value="">全部类型</option>
+              <option value="物理">物理</option>
+              <option value="特殊">特殊</option>
+              <option value="变化">变化</option>
+            </select>
+            <select id="skillSort">
+              <option value="number-asc">编号 ↑</option>
+              <option value="number-desc">编号 ↓</option>
+              <option value="name-asc">名称 ↑</option>
+              <option value="name-desc">名称 ↓</option>
+            </select>
+            <button type="button" id="btnSkillSearch" class="btn btn-primary">搜索</button>
+          </div>
+          <button type="button" id="btnAddSkill" class="btn btn-primary">+ 添加技能</button>
+        </div>
+        <div class="spirits-table-wrap">
+          <table class="spirits-table">
+            <thead>
+              <tr>
+                <th>编号</th>
+                <th>名称</th>
+                <th>属性</th>
+                <th>类型</th>
+                <th>威力</th>
+                <th>命中</th>
+                <th>PP</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="skillsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="tabItems" class="admin-tab-panel">
+        <div class="spirits-toolbar">
+          <div class="spirits-search">
+            <input type="text" id="itemSearch" placeholder="搜索编号或名称" maxlength="64">
+            <select id="itemCategoryFilter">
+              <option value="">全部类型</option>
+              <option value="道具">道具</option>
+              <option value="精灵球">精灵球</option>
+              <option value="贵重物品">贵重物品</option>
+              <option value="药品">药品</option>
+              <option value="商城">商城</option>
+              <option value="时装">时装</option>
+            </select>
+            <select id="itemSort">
+              <option value="number-asc">编号 ↑</option>
+              <option value="number-desc">编号 ↓</option>
+              <option value="name-asc">名称 ↑</option>
+              <option value="name-desc">名称 ↓</option>
+            </select>
+            <button type="button" id="btnItemSearch" class="btn btn-primary">搜索</button>
+          </div>
+          <button type="button" id="btnAddItem" class="btn btn-primary">+ 添加物品</button>
+        </div>
+        <div class="spirits-table-wrap">
+          <table class="spirits-table">
+            <thead>
+              <tr>
+                <th>编号</th>
+                <th>图片</th>
+                <th>名称</th>
+                <th>类型</th>
+                <th>描述</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="itemsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="tabCharacters" class="admin-tab-panel">
+        <div class="spirits-toolbar">
+          <div class="spirits-search">
+            <select id="characterUserFilter">
+              <option value="">全部账号</option>
+            </select>
+            <button type="button" id="btnCharacterSearch" class="btn btn-primary">筛选</button>
+          </div>
+          <button type="button" id="btnAddCharacter" class="btn btn-primary">+ 创建角色</button>
+        </div>
+        <div class="spirits-table-wrap">
+          <table class="spirits-table">
+            <thead>
+              <tr>
+                <th>账号</th>
+                <th>角色位</th>
+                <th>角色名</th>
+                <th>金币</th>
+                <th>RP</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="charactersTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="tabLogs" class="admin-tab-panel">
+        <div class="spirits-toolbar">
+          <div class="spirits-search">
+            <select id="logActionFilter">
+              <option value="">全部操作</option>
+              <option value="login">登录</option>
+              <option value="user_role">用户角色</option>
+              <option value="user_delete">删除用户</option>
+              <option value="spirit">妖灵</option>
+              <option value="skill">技能</option>
+              <option value="item">物品</option>
+              <option value="character">角色</option>
+              <option value="player_item">玩家物品</option>
+              <option value="festival">节日</option>
+            </select>
+            <button type="button" id="btnLogSearch" class="btn btn-primary">筛选</button>
+          </div>
+        </div>
+        <div class="spirits-table-wrap">
+          <table class="spirits-table">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>操作人</th>
+                <th>操作</th>
+                <th>详情</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="tabFestivals" class="admin-tab-panel">
+        <div class="spirits-toolbar">
+          <p class="festival-hint">节日期间可设置 Buff 加成（闪率、金币、经验、捕捉率），仅 OW 可管理。</p>
+          <button type="button" id="btnAddFestival" class="btn btn-primary">+ 添加节日</button>
+        </div>
+        <div class="spirits-table-wrap">
+          <table class="spirits-table">
+            <thead>
+              <tr>
+                <th>节日名称</th>
+                <th>开始日期</th>
+                <th>结束日期</th>
+                <th>闪率</th>
+                <th>金币</th>
+                <th>经验</th>
+                <th>捕捉率</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="festivalsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="tabPlayerItems" class="admin-tab-panel">
+        <div class="spirits-toolbar">
+          <div class="spirits-search">
+            <select id="playerItemCharacterFilter">
+              <option value="">全部角色</option>
+            </select>
+            <select id="playerItemItemFilter">
+              <option value="">全部物品</option>
+            </select>
+            <button type="button" id="btnPlayerItemSearch" class="btn btn-primary">筛选</button>
+          </div>
+          <button type="button" id="btnAddPlayerItem" class="btn btn-primary">+ 发放物品</button>
+        </div>
+        <div class="spirits-table-wrap">
+          <table class="spirits-table">
+            <thead>
+              <tr>
+                <th>账号</th>
+                <th>角色</th>
+                <th>物品</th>
+                <th>数量</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="playerItemsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 妖灵编辑弹层 -->
+      <div id="spiritModal" class="spirit-modal hidden">
+        <div class="spirit-modal-content">
+          <button type="button" class="spirit-modal-close" id="btnCloseSpiritModal" aria-label="关闭">&times;</button>
+          <h3 id="spiritModalTitle">添加妖灵</h3>
+          <form id="formSpirit">
+            <input type="hidden" name="spiritId">
+            <div class="form-row">
+              <label>图鉴编号 <span class="required">*</span></label>
+              <input type="number" name="number" min="1" max="9999" placeholder="1" required>
+            </div>
+            <div class="form-row">
+              <label>名称 <span class="required">*</span></label>
+              <input type="text" name="name" maxlength="32" placeholder="妖灵名称" required>
+            </div>
+            <div class="form-row">
+              <label>属性（最多2个）</label>
+              <div class="type-inputs">
+                <select name="type1">
+                  <option value="">无</option>
+                  <option value="火">火</option>
+                  <option value="水">水</option>
+                  <option value="草">草</option>
+                  <option value="电">电</option>
+                  <option value="冰">冰</option>
+                  <option value="格斗">格斗</option>
+                  <option value="毒">毒</option>
+                  <option value="地面">地面</option>
+                  <option value="飞行">飞行</option>
+                  <option value="超能">超能</option>
+                  <option value="虫">虫</option>
+                  <option value="岩石">岩石</option>
+                  <option value="幽灵">幽灵</option>
+                  <option value="龙">龙</option>
+                  <option value="恶">恶</option>
+                  <option value="钢">钢</option>
+                  <option value="妖精">妖精</option>
+                </select>
+                <select name="type2">
+                  <option value="">无</option>
+                  <option value="火">火</option>
+                  <option value="水">水</option>
+                  <option value="草">草</option>
+                  <option value="电">电</option>
+                  <option value="冰">冰</option>
+                  <option value="格斗">格斗</option>
+                  <option value="毒">毒</option>
+                  <option value="地面">地面</option>
+                  <option value="飞行">飞行</option>
+                  <option value="超能">超能</option>
+                  <option value="虫">虫</option>
+                  <option value="岩石">岩石</option>
+                  <option value="幽灵">幽灵</option>
+                  <option value="龙">龙</option>
+                  <option value="恶">恶</option>
+                  <option value="钢">钢</option>
+                  <option value="妖精">妖精</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row stats-row">
+              <label>种族值</label>
+              <div class="stats-grid">
+                <div><label>HP</label><input type="number" name="hp" min="1" max="255" value="50"></div>
+                <div><label>攻击</label><input type="number" name="attack" min="1" max="255" value="50"></div>
+                <div><label>防御</label><input type="number" name="defense" min="1" max="255" value="50"></div>
+                <div><label>特攻</label><input type="number" name="sp_attack" min="1" max="255" value="50"></div>
+                <div><label>特防</label><input type="number" name="sp_defense" min="1" max="255" value="50"></div>
+                <div><label>速度</label><input type="number" name="speed" min="1" max="255" value="50"></div>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>描述</label>
+              <textarea name="description" rows="3" maxlength="512" placeholder="妖灵描述"></textarea>
+            </div>
+            <div class="form-row">
+              <label>图片 URL</label>
+              <input type="url" name="image" maxlength="512" placeholder="https://...">
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" id="btnCancelSpirit">取消</button>
+              <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 技能编辑弹层 -->
+      <div id="skillModal" class="spirit-modal hidden">
+        <div class="spirit-modal-content">
+          <button type="button" class="spirit-modal-close" id="btnCloseSkillModal" aria-label="关闭">&times;</button>
+          <h3 id="skillModalTitle">添加技能</h3>
+          <form id="formSkill">
+            <input type="hidden" name="skillId">
+            <div class="form-row">
+              <label>编号 <span class="required">*</span></label>
+              <input type="number" name="number" min="1" max="9999" placeholder="1" required>
+            </div>
+            <div class="form-row">
+              <label>名称 <span class="required">*</span></label>
+              <input type="text" name="name" maxlength="32" placeholder="技能名称" required>
+            </div>
+            <div class="form-row">
+              <label>属性</label>
+              <select name="type">
+                <option value="">无</option>
+                <option value="火">火</option>
+                <option value="水">水</option>
+                <option value="草">草</option>
+                <option value="电">电</option>
+                <option value="冰">冰</option>
+                <option value="格斗">格斗</option>
+                <option value="毒">毒</option>
+                <option value="地面">地面</option>
+                <option value="飞行">飞行</option>
+                <option value="超能">超能</option>
+                <option value="虫">虫</option>
+                <option value="岩石">岩石</option>
+                <option value="幽灵">幽灵</option>
+                <option value="龙">龙</option>
+                <option value="恶">恶</option>
+                <option value="钢">钢</option>
+                <option value="妖精">妖精</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>技能类型</label>
+              <select name="category">
+                <option value="">无</option>
+                <option value="物理">物理</option>
+                <option value="特殊">特殊</option>
+                <option value="变化">变化</option>
+              </select>
+            </div>
+            <div class="form-row type-inputs">
+              <div><label>威力</label><input type="number" name="power" min="0" max="300" value="0"></div>
+              <div><label>命中%</label><input type="number" name="accuracy" min="0" max="100" value="100"></div>
+              <div><label>PP</label><input type="number" name="pp" min="1" max="40" value="10"></div>
+            </div>
+            <div class="form-row">
+              <label>描述</label>
+              <textarea name="description" rows="2" maxlength="512" placeholder="技能描述"></textarea>
+            </div>
+            <div class="form-row">
+              <label>效果说明</label>
+              <input type="text" name="effect" maxlength="256" placeholder="效果">
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" id="btnCancelSkill">取消</button>
+              <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 物品编辑弹层 -->
+      <div id="itemModal" class="spirit-modal hidden">
+        <div class="spirit-modal-content">
+          <button type="button" class="spirit-modal-close" id="btnCloseItemModal" aria-label="关闭">&times;</button>
+          <h3 id="itemModalTitle">添加物品</h3>
+          <form id="formItem">
+            <input type="hidden" name="itemId">
+            <div class="form-row">
+              <label>编号 <span class="required">*</span></label>
+              <input type="number" name="number" min="1" max="9999" placeholder="1" required>
+            </div>
+            <div class="form-row">
+              <label>名称 <span class="required">*</span></label>
+              <input type="text" name="name" maxlength="32" placeholder="物品名称" required>
+            </div>
+            <div class="form-row">
+              <label>类型</label>
+              <select name="category">
+                <option value="道具">道具</option>
+                <option value="精灵球">精灵球</option>
+                <option value="贵重物品">贵重物品</option>
+                <option value="药品">药品</option>
+                <option value="商城">商城</option>
+                <option value="时装">时装</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>描述</label>
+              <textarea name="description" rows="3" maxlength="512" placeholder="物品描述"></textarea>
+            </div>
+            <div class="form-row">
+              <label>效果说明</label>
+              <input type="text" name="effect" maxlength="256" placeholder="效果">
+            </div>
+            <div class="form-row">
+              <label>图片 URL</label>
+              <input type="url" name="image" maxlength="512" placeholder="https://...">
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" id="btnCancelItem">取消</button>
+              <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 角色编辑弹层 -->
+      <div id="characterModal" class="spirit-modal hidden">
+        <div class="spirit-modal-content">
+          <button type="button" class="spirit-modal-close" id="btnCloseCharacterModal" aria-label="关闭">&times;</button>
+          <h3 id="characterModalTitle">创建角色</h3>
+          <form id="formCharacter" novalidate>
+            <input type="hidden" name="characterId">
+            <div class="form-row">
+              <label>账号 <span class="required">*</span></label>
+              <select name="userId" id="characterUserId" required>
+                <option value="">请选择账号</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>角色位 <span class="required">*</span></label>
+              <select name="slot">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>角色名 <span class="required">*</span></label>
+              <input type="text" name="name" maxlength="20" placeholder="角色名称" required>
+            </div>
+            <div class="form-row">
+              <label>金币</label>
+              <input type="number" name="gold" min="0" max="999999999" value="0" placeholder="0">
+            </div>
+            <div class="form-row">
+              <label>RP</label>
+              <input type="number" name="rp" min="0" max="999999999" value="0" placeholder="0">
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" id="btnCancelCharacter">取消</button>
+              <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 节日编辑弹层 -->
+      <div id="festivalModal" class="spirit-modal hidden">
+        <div class="spirit-modal-content">
+          <button type="button" class="spirit-modal-close" id="btnCloseFestivalModal" aria-label="关闭">&times;</button>
+          <h3 id="festivalModalTitle">添加节日</h3>
+          <form id="formFestival">
+            <input type="hidden" name="festivalId">
+            <div class="form-row">
+              <label>节日名称 <span class="required">*</span></label>
+              <input type="text" name="name" maxlength="64" placeholder="如：春节活动" required>
+            </div>
+            <div class="form-row">
+              <label>开始日期 <span class="required">*</span></label>
+              <input type="datetime-local" name="startDate" required>
+            </div>
+            <div class="form-row">
+              <label>结束日期 <span class="required">*</span></label>
+              <input type="datetime-local" name="endDate" required>
+            </div>
+            <div class="form-row stats-row">
+              <label>Buff 加成（1–10 倍，1 为无加成）</label>
+              <div class="stats-grid">
+                <div><label>闪率</label><input type="number" name="shineRateBoost" min="1" max="10" step="0.1" value="1"></div>
+                <div><label>金币</label><input type="number" name="goldBoost" min="1" max="10" step="0.1" value="1"></div>
+                <div><label>经验</label><input type="number" name="expBoost" min="1" max="10" step="0.1" value="1"></div>
+                <div><label>捕捉率</label><input type="number" name="captureRateBoost" min="1" max="10" step="0.1" value="1"></div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" id="btnCancelFestival">取消</button>
+              <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 玩家物品弹层 -->
+      <div id="playerItemModal" class="spirit-modal hidden">
+        <div class="spirit-modal-content">
+          <button type="button" class="spirit-modal-close" id="btnClosePlayerItemModal" aria-label="关闭">&times;</button>
+          <h3 id="playerItemModalTitle">发放物品</h3>
+          <form id="formPlayerItem">
+            <input type="hidden" name="playerItemId">
+            <div class="form-row">
+              <label>角色 <span class="required">*</span></label>
+              <select name="characterId" id="playerItemCharacterId" required>
+                <option value="">请选择角色</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>物品 <span class="required">*</span></label>
+              <select name="itemId" id="playerItemItemId" required>
+                <option value="">请选择物品</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>数量 <span class="required">*</span></label>
+              <input type="number" name="quantity" min="1" max="9999" value="1" required>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" id="btnCancelPlayerItem">取消</button>
+              <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="forbiddenSection" class="admin-forbidden hidden">
+      <p>需要管理员权限</p>
+      <a href="/" class="btn btn-primary">返回首页</a>
+    </div>
+  </main>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>

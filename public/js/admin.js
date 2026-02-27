@@ -783,18 +783,20 @@ formCharacter?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const form = e.target;
   const id = (form.querySelector('[name="characterId"]') || form.characterId)?.value?.trim();
-  if (id) {
+    if (id) {
     const name = (form.querySelector('[name="name"]') || form.name)?.value?.trim() ?? '';
     const goldInput = form.querySelector('[name="gold"]') || form.gold;
     const rpInput = form.querySelector('[name="rp"]') || form.rp;
+    const capInput = form.querySelector('[name="backpackCapacity"]') || form.backpackCapacity;
     const gold = Math.max(0, Math.floor(parseInt(goldInput?.value, 10) || 0));
     const rp = Math.max(0, Math.floor(parseInt(rpInput?.value, 10) || 0));
+    const backpackCapacity = Math.min(200, Math.max(10, parseInt(capInput?.value, 10) || 30));
     if (!name) { alert('请填写角色名'); return; }
     try {
       const res = await apiFetch('/admin/characters/' + id, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, gold, rp }),
+        body: JSON.stringify({ name, gold, rp, backpackCapacity }),
       });
       let json;
       try { json = await res.json(); } catch (_) { alert('服务器返回异常'); return; }
@@ -806,12 +808,14 @@ formCharacter?.addEventListener('submit', async (e) => {
     const userId = form.userId?.value;
     const slot = parseInt(form.slot?.value, 10) || 1;
     const name = form.name?.value?.trim();
+    const capInput = form.querySelector('[name="backpackCapacity"]') || form.backpackCapacity;
+    const backpackCapacity = Math.min(200, Math.max(10, parseInt(capInput?.value, 10) || 30));
     if (!userId || !name) { alert('请选择账号并填写角色名'); return; }
     try {
       const res = await apiFetch('/admin/characters', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, slot, name }),
+        body: JSON.stringify({ userId, slot, name, backpackCapacity }),
       });
       const json = await res.json();
       if (!res.ok) { alert(json.error || '创建失败'); return; }
@@ -830,7 +834,7 @@ async function loadCharacters() {
     const { characters } = await res.json();
     if (charactersTableBody) {
       charactersTableBody.innerHTML = characters.length === 0
-        ? '<tr><td colspan="6" class="empty">暂无角色</td></tr>'
+        ? '<tr><td colspan="7" class="empty">暂无角色</td></tr>'
         : characters.map((c) => `
           <tr data-id="${escapeHtml(c.id)}">
             <td>${escapeHtml(c.username)}</td>
@@ -838,14 +842,15 @@ async function loadCharacters() {
             <td><strong>${escapeHtml(c.name)}</strong></td>
             <td>${c.gold ?? 0}</td>
             <td>${c.rp ?? 0}</td>
+            <td>${c.backpackCapacity ?? 30}</td>
             <td class="spirit-actions">
-              <button type="button" class="btn btn-ghost btn-sm btn-edit" data-id="${escapeHtml(c.id)}" data-name="${escapeHtml(c.name)}" data-gold="${c.gold ?? 0}" data-rp="${c.rp ?? 0}">编辑</button>
+              <button type="button" class="btn btn-ghost btn-sm btn-edit" data-id="${escapeHtml(c.id)}" data-name="${escapeHtml(c.name)}" data-gold="${c.gold ?? 0}" data-rp="${c.rp ?? 0}" data-backpack-capacity="${c.backpackCapacity ?? 30}">编辑</button>
               <button type="button" class="btn btn-danger btn-sm btn-delete" data-id="${escapeHtml(c.id)}" data-desc="${escapeHtml(c.username + ' - ' + c.name)}">删除</button>
             </td>
           </tr>
         `).join('');
       charactersTableBody.querySelectorAll('.btn-edit').forEach((btn) => {
-        btn.onclick = () => openCharacterModal(btn.dataset.id, btn.dataset.name, btn.dataset.gold, btn.dataset.rp);
+        btn.onclick = () => openCharacterModal(btn.dataset.id, btn.dataset.name, btn.dataset.gold, btn.dataset.rp, btn.dataset.backpackCapacity);
       });
       charactersTableBody.querySelectorAll('.btn-delete').forEach((btn) => {
         btn.onclick = () => deleteCharacter(btn.dataset.id, btn.dataset.desc);
@@ -856,7 +861,7 @@ async function loadCharacters() {
   }
 }
 
-async function openCharacterModal(id, name, gold, rp) {
+async function openCharacterModal(id, name, gold, rp, backpackCapacity) {
   if (id) {
     $('#characterModalTitle').textContent = '编辑角色';
     const charIdInput = formCharacter.querySelector('[name="characterId"]') || formCharacter.characterId;
@@ -866,9 +871,11 @@ async function openCharacterModal(id, name, gold, rp) {
     const nameInput = formCharacter.querySelector('[name="name"]') || formCharacter.name;
     const goldInput = formCharacter.querySelector('[name="gold"]') || formCharacter.gold;
     const rpInput = formCharacter.querySelector('[name="rp"]') || formCharacter.rp;
+    const capInput = formCharacter.querySelector('[name="backpackCapacity"]') || formCharacter.backpackCapacity;
     if (nameInput) nameInput.value = name || '';
     if (goldInput) goldInput.value = gold ?? 0;
     if (rpInput) rpInput.value = rp ?? 0;
+    if (capInput) capInput.value = backpackCapacity ?? 30;
     characterModal.classList.remove('hidden');
   } else {
     $('#characterModalTitle').textContent = '创建角色';

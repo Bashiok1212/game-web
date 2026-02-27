@@ -164,6 +164,7 @@ router.get('/user/characters', authMiddleware, async (req, res) => {
         rp: c?.rp ?? 0,
         x: c?.x ?? 0,
         y: c?.y ?? 0,
+        backpackCapacity: c?.backpackCapacity ?? 30,
       });
     }
     res.json({ characters: list });
@@ -219,7 +220,7 @@ router.get('/user/player-items', authMiddleware, async (req, res) => {
     if (!character) return res.status(404).json({ error: '角色不存在或无权访问' });
     const items = await PlayerItem.find({ character: characterId })
       .populate('item', 'number name category image description effect')
-      .sort({ updated_at: -1 })
+      .sort({ slot: 1, updated_at: -1 })
       .lean();
     const list = items.map((pi) => ({
       id: pi._id.toString(),
@@ -229,8 +230,10 @@ router.get('/user/player-items', authMiddleware, async (req, res) => {
       itemCategory: pi.item?.category || '',
       itemImage: pi.item?.image || '',
       quantity: pi.quantity,
+      slot: pi.slot ?? 0,
     }));
-    res.json({ playerItems: list });
+    const capacity = character.backpackCapacity ?? 30;
+    res.json({ playerItems: list, backpackCapacity: capacity, usedSlots: list.length });
   } catch (err) {
     console.error('Get user player-items error:', err.message);
     res.status(500).json({ error: '获取背包失败' });

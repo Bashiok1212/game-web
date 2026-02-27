@@ -626,6 +626,7 @@ router.get('/characters', authMiddleware, adminMiddleware, async (req, res) => {
       name: c.name || '',
       gold: c.gold ?? 0,
       rp: c.rp ?? 0,
+      backpackCapacity: c.backpackCapacity ?? 30,
       created_at: c.created_at,
     }));
     res.json({ characters: list });
@@ -637,7 +638,7 @@ router.get('/characters', authMiddleware, adminMiddleware, async (req, res) => {
 
 router.post('/characters', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { userId, slot, name } = req.body;
+    const { userId, slot, name, backpackCapacity } = req.body;
     if (!userId || !name) return res.status(400).json({ error: '用户和角色名为必填' });
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: '用户不存在' });
@@ -646,12 +647,14 @@ router.post('/characters', authMiddleware, adminMiddleware, async (req, res) => 
     if (exists) return res.status(400).json({ error: `该账号角色位 ${s} 已存在` });
     const count = await Character.countDocuments({ user: userId });
     if (count >= 3) return res.status(400).json({ error: '每个账号最多 3 个角色' });
+    const cap = backpackCapacity != null ? Math.min(200, Math.max(10, Math.floor(Number(backpackCapacity) || 30))) : 30;
     const character = await Character.create({
       user: userId,
       slot: s,
       name: String(name).trim().slice(0, 20),
       gold: 0,
       rp: 0,
+      backpackCapacity: cap,
     });
     const op = await User.findById(req.user.id).select('username');
     await logAdminAction(req.user.id, op?.username, 'character', `为用户 ${user.username} 创建角色位${s} ${character.name}`, character._id.toString());
@@ -665,7 +668,7 @@ router.post('/characters', authMiddleware, adminMiddleware, async (req, res) => 
 
 router.put('/characters/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { name, gold, rp } = req.body;
+    const { name, gold, rp, backpackCapacity } = req.body;
     const character = await Character.findById(req.params.id);
     if (!character) return res.status(404).json({ error: '角色不存在' });
     if (name != null) {
@@ -674,6 +677,7 @@ router.put('/characters/:id', authMiddleware, adminMiddleware, async (req, res) 
     }
     if (gold != null) character.gold = Math.max(0, Math.floor(Number(gold) || 0));
     if (rp != null) character.rp = Math.max(0, Math.floor(Number(rp) || 0));
+    if (backpackCapacity != null) character.backpackCapacity = Math.min(200, Math.max(10, Math.floor(Number(backpackCapacity) || 30)));
     await character.save();
     const op = await User.findById(req.user.id).select('username');
     await logAdminAction(req.user.id, op?.username, 'character', `更新角色 ${character.name}`, character._id.toString());
@@ -710,7 +714,7 @@ router.get('/player-items', authMiddleware, adminMiddleware, async (req, res) =>
     const playerItems = await PlayerItem.find(filter)
       .populate({ path: 'character', populate: { path: 'user', select: 'username' } })
       .populate('item', 'number name category image')
-      .sort({ updated_at: -1 })
+      .sort({ slot: 1, updated_at: -1 })
       .lean();
     const list = playerItems.map((pi) => ({
       id: pi._id.toString(),
@@ -724,6 +728,7 @@ router.get('/player-items', authMiddleware, adminMiddleware, async (req, res) =>
       itemCategory: pi.item?.category || '',
       itemImage: pi.item?.image || '',
       quantity: pi.quantity,
+      slot: pi.slot ?? 0,
       updated_at: pi.updated_at,
     }));
     res.json({ playerItems: list });
@@ -747,7 +752,12 @@ router.post('/player-items', authMiddleware, adminMiddleware, async (req, res) =
       playerItem.quantity += qty;
       await playerItem.save();
     } else {
-      playerItem = await PlayerItem.create({ character: characterId, item: itemId, quantity: qty });
+      const cap = character.backpackCapacity ?? 30;
+      const count = await PlayerItem.countDocuments({ character: characterId });
+      if (count >= cap) return res.status(400).json({ error: `背包已满（${cap} 格），无法添加新物品` });
+      const maxSlot = await PlayerItem.findOne({ character: characterId }).sort({ slot: -1 }).select('slot').lean();
+      const nextSlot = (maxSlot?.slot ?? -1) + 1;
+      playerItem = await PlayerItem.create({ character: characterId, item: itemId, quantity: qty, slot: nextSlot });
     }
     const op = await User.findById(req.user.id).select('username');
     await logAdminAction(req.user.id, op?.username, 'player_item', `发放 ${item.name} x${qty} 给角色`, playerItem._id.toString());

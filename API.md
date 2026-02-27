@@ -115,9 +115,9 @@
 ```json
 {
   "characters": [
-    { "id": "xxx", "slot": 1, "name": "角色1", "gold": 100, "rp": 50, "x": 150, "y": 200 },
-    { "id": "yyy", "slot": 2, "name": "角色2", "gold": 0, "rp": 0, "x": 0, "y": 0 },
-    { "id": null, "slot": 3, "name": "", "gold": 0, "rp": 0, "x": 0, "y": 0 }
+    { "id": "xxx", "slot": 1, "name": "角色1", "gold": 100, "rp": 50, "x": 150, "y": 200, "backpackCapacity": 30 },
+    { "id": "yyy", "slot": 2, "name": "角色2", "gold": 0, "rp": 0, "x": 0, "y": 0, "backpackCapacity": 30 },
+    { "id": null, "slot": 3, "name": "", "gold": 0, "rp": 0, "x": 0, "y": 0, "backpackCapacity": 30 }
   ]
 }
 ```
@@ -208,9 +208,12 @@
       "itemName": "精灵球",
       "itemCategory": "精灵球",
       "itemImage": "https://...",
-      "quantity": 10
+      "quantity": 10,
+      "slot": 0
     }
-  ]
+  ],
+  "backpackCapacity": 30,
+  "usedSlots": 1
 }
 ```
 
@@ -736,6 +739,13 @@
 | character | ObjectId | 所属角色 |
 | item | ObjectId | 物品 |
 | quantity | number | 数量 |
+| slot | number | 背包格子位置（0 起，用于排序） |
+
+### 4.8 角色背包容量（Character.backpackCapacity）
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| backpackCapacity | number | 背包可容纳的不同物品种类数，默认 30，范围 10–200 |
 
 ---
 

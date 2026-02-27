@@ -23,6 +23,12 @@ const characterSchema = new mongoose.Schema({
   rp: { type: Number, default: 0 },
   x: { type: Number, default: 0 },
   y: { type: Number, default: 0 },
+  backpackCapacity: {
+    type: Number,
+    default: 30,
+    min: 10,
+    max: 200,
+  },
   created_at: {
     type: Date,
     default: Date.now,

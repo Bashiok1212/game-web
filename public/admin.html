@@ -249,6 +249,7 @@
                 <th>角色名</th>
                 <th>金币</th>
                 <th>RP</th>
+                <th>背包</th>
                 <th>操作</th>
               </tr>
             </thead>
@@ -576,6 +577,10 @@
             <div class="form-row">
               <label>RP</label>
               <input type="number" name="rp" min="0" max="999999999" value="0" placeholder="0">
+            </div>
+            <div class="form-row">
+              <label>背包容量（格）</label>
+              <input type="number" name="backpackCapacity" min="10" max="200" value="30" placeholder="30" title="角色背包可容纳的不同物品种类数">
             </div>
             <div class="form-actions">
               <button type="button" class="btn btn-ghost" id="btnCancelCharacter">取消</button>

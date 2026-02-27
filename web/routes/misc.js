@@ -9,14 +9,19 @@ router.get('/time', (req, res) => {
     const now = new Date();
     const timestamp = Math.floor(now.getTime() / 1000);
     const utc = now.toISOString();
-    const utcFormatted = now.toLocaleString('zh-CN', { timeZone: 'UTC' });
-    const pacific = now.toLocaleString('sv-SE', { timeZone: 'America/Los_Angeles' }).replace(' ', 'T');
-    const pacificFormatted = now.toLocaleString('zh-CN', { timeZone: 'America/Los_Angeles' });
+    let utcFormatted, pacificFormatted;
+    try {
+      utcFormatted = now.toLocaleString('zh-CN', { timeZone: 'UTC' });
+      pacificFormatted = now.toLocaleString('zh-CN', { timeZone: 'America/Los_Angeles' });
+    } catch (_) {
+      utcFormatted = now.toISOString();
+      pacificFormatted = now.toLocaleString('zh-CN');
+    }
     res.json({
       timestamp,
       utc,
       utcFormatted,
-      pacific,
+      pacific: pacificFormatted,
       pacificFormatted,
     });
   } catch (err) {

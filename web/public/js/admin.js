@@ -75,11 +75,14 @@ async function loadServerTime() {
     const res = await fetch(API + '/time');
     if (res.ok) {
       const data = await res.json();
-      el.textContent = data.pacificFormatted || data.utcFormatted || new Date().toLocaleString('zh-CN');
+      const display = data.pacificFormatted || data.utcFormatted || new Date().toLocaleString('zh-CN');
+      el.textContent = '服务器时间: ' + display;
       el.title = 'UTC: ' + (data.utcFormatted || '') + '\n太平洋: ' + (data.pacificFormatted || '');
+    } else {
+      el.textContent = '服务器时间: ' + new Date().toLocaleString('zh-CN') + ' (本地)';
     }
   } catch (_) {
-    el.textContent = new Date().toLocaleString('zh-CN') + ' (本地)';
+    el.textContent = '服务器时间: ' + new Date().toLocaleString('zh-CN') + ' (本地)';
   }
   if (serverTimeInterval) clearInterval(serverTimeInterval);
   serverTimeInterval = setInterval(loadServerTime, 60000);
@@ -88,6 +91,7 @@ async function loadServerTime() {
 async function loadLogs() {
   const tbody = $('#logsTableBody');
   if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="4">加载中...</td></tr>';
   const actionFilter = $('#logActionFilter')?.value || '';
   try {
     const url = actionFilter ? '/admin/logs?action=' + encodeURIComponent(actionFilter) : '/admin/logs';

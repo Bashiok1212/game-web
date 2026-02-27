@@ -91,6 +91,8 @@ app.get('/admin', (req, res) => {
     serverTimeStr = now.toLocaleString('zh-CN');
   }
   html = html.replace('>服务器时间: 加载中...<', `>服务器时间: ${serverTimeStr}<`);
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
   res.type('html').send(html);
 });
 app.get('/admin/', (req, res) => {

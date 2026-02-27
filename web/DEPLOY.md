@@ -128,3 +128,20 @@ A: 推荐使用 pm2：`npm install -g pm2`，然后 `pm2 start server.js --name 
 
 **Q: deploy-pull.sh 无执行权限？**  
 A: 执行 `chmod +x deploy-pull.sh`。
+
+**Q: 推送后网页没更新？**  
+A: 推送只是把代码传到 GitHub，服务器不会自动更新。需要 SSH 登录服务器后执行：
+```bash
+cd /root/web          # 或你的项目目录（含 .git 的仓库根目录）
+git pull origin master
+cd web                # 进入 web 子目录（若有）
+npm install --production
+pm2 restart game-web  # 或 systemctl restart game-web
+```
+若项目在 `/root/game-web`，则：
+```bash
+cd /root/game-web
+git pull origin master
+cd web
+pm2 restart game-web
+```

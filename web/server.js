@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const fs = require('fs');
 
 require('./config/db');
 const authRoutes = require('./routes/auth');
@@ -78,9 +79,19 @@ app.use('/api/admin', adminRoutes);
 app.use('/api', miscRoutes);
 app.use('/api', authRoutes);
 
-// 管理后台（放在 static 之前）
+// 管理后台（放在 static 之前）- 服务端注入服务器时间，确保直接可见
 app.get('/admin', (req, res) => {
-  res.sendFile(path.resolve(__dirname, 'public', 'admin.html'));
+  const htmlPath = path.resolve(__dirname, 'public', 'admin.html');
+  let html = fs.readFileSync(htmlPath, 'utf8');
+  const now = new Date();
+  let serverTimeStr;
+  try {
+    serverTimeStr = now.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+  } catch (_) {
+    serverTimeStr = now.toLocaleString('zh-CN');
+  }
+  html = html.replace('>服务器时间: 加载中...<', `>服务器时间: ${serverTimeStr}<`);
+  res.type('html').send(html);
 });
 app.get('/admin/', (req, res) => {
   res.redirect(301, '/admin');

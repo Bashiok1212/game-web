@@ -790,7 +790,7 @@ formCharacter?.addEventListener('submit', async (e) => {
     const capInput = form.querySelector('[name="backpackCapacity"]') || form.backpackCapacity;
     const gold = Math.max(0, Math.floor(parseInt(goldInput?.value, 10) || 0));
     const rp = Math.max(0, Math.floor(parseInt(rpInput?.value, 10) || 0));
-    const backpackCapacity = Math.min(200, Math.max(10, parseInt(capInput?.value, 10) || 30));
+    const backpackCapacity = Math.min(99999, Math.max(10, parseInt(capInput?.value, 10) || 9999));
     if (!name) { alert('请填写角色名'); return; }
     try {
       const res = await apiFetch('/admin/characters/' + id, {
@@ -809,7 +809,7 @@ formCharacter?.addEventListener('submit', async (e) => {
     const slot = parseInt(form.slot?.value, 10) || 1;
     const name = form.name?.value?.trim();
     const capInput = form.querySelector('[name="backpackCapacity"]') || form.backpackCapacity;
-    const backpackCapacity = Math.min(200, Math.max(10, parseInt(capInput?.value, 10) || 30));
+    const backpackCapacity = Math.min(99999, Math.max(10, parseInt(capInput?.value, 10) || 9999));
     if (!userId || !name) { alert('请选择账号并填写角色名'); return; }
     try {
       const res = await apiFetch('/admin/characters', {
@@ -842,9 +842,9 @@ async function loadCharacters() {
             <td><strong>${escapeHtml(c.name)}</strong></td>
             <td>${c.gold ?? 0}</td>
             <td>${c.rp ?? 0}</td>
-            <td>${c.backpackCapacity ?? 30}</td>
+            <td>${(c.backpackCapacity ?? 9999) >= 9999 ? '无限' : (c.backpackCapacity ?? 9999)}</td>
             <td class="spirit-actions">
-              <button type="button" class="btn btn-ghost btn-sm btn-edit" data-id="${escapeHtml(c.id)}" data-name="${escapeHtml(c.name)}" data-gold="${c.gold ?? 0}" data-rp="${c.rp ?? 0}" data-backpack-capacity="${c.backpackCapacity ?? 30}">编辑</button>
+              <button type="button" class="btn btn-ghost btn-sm btn-edit" data-id="${escapeHtml(c.id)}" data-name="${escapeHtml(c.name)}" data-gold="${c.gold ?? 0}" data-rp="${c.rp ?? 0}" data-backpack-capacity="${c.backpackCapacity ?? 9999}">编辑</button>
               <button type="button" class="btn btn-danger btn-sm btn-delete" data-id="${escapeHtml(c.id)}" data-desc="${escapeHtml(c.username + ' - ' + c.name)}">删除</button>
             </td>
           </tr>
@@ -875,7 +875,7 @@ async function openCharacterModal(id, name, gold, rp, backpackCapacity) {
     if (nameInput) nameInput.value = name || '';
     if (goldInput) goldInput.value = gold ?? 0;
     if (rpInput) rpInput.value = rp ?? 0;
-    if (capInput) capInput.value = backpackCapacity ?? 30;
+    if (capInput) capInput.value = backpackCapacity ?? 9999;
     characterModal.classList.remove('hidden');
   } else {
     $('#characterModalTitle').textContent = '创建角色';
@@ -886,6 +886,8 @@ async function openCharacterModal(id, name, gold, rp, backpackCapacity) {
     const rpInput = formCharacter.querySelector('[name="rp"]') || formCharacter.rp;
     if (goldInput) goldInput.value = 0;
     if (rpInput) rpInput.value = 0;
+    const capInput = formCharacter.querySelector('[name="backpackCapacity"]') || formCharacter.backpackCapacity;
+    if (capInput) capInput.value = 9999;
     formCharacter.userId?.closest('.form-row')?.classList.remove('hidden');
     formCharacter.slot.closest('.form-row')?.classList.remove('hidden');
     try {
@@ -950,6 +952,7 @@ $('#btnCancelPlayerItem')?.addEventListener('click', () => closePlayerItemModal(
 playerItemModal?.addEventListener('click', (e) => { if (e.target === playerItemModal) closePlayerItemModal(); });
 
 $('#btnPlayerItemSearch')?.addEventListener('click', () => loadPlayerItems());
+$('#playerItemUserFilter')?.addEventListener('change', () => { onPlayerItemUserChange(); loadPlayerItems(); });
 $('#playerItemCharacterFilter')?.addEventListener('change', () => loadPlayerItems());
 $('#playerItemItemFilter')?.addEventListener('change', () => loadPlayerItems());
 
@@ -990,9 +993,11 @@ formPlayerItem?.addEventListener('submit', async (e) => {
 });
 
 async function loadPlayerItems() {
+  const userId = $('#playerItemUserFilter')?.value || '';
   const characterId = $('#playerItemCharacterFilter')?.value || '';
   const itemId = $('#playerItemItemFilter')?.value || '';
   const params = new URLSearchParams();
+  if (userId) params.set('userId', userId);
   if (characterId) params.set('characterId', characterId);
   if (itemId) params.set('itemId', itemId);
   try {
@@ -1280,19 +1285,43 @@ async function deleteFestival(id, name) {
   }
 }
 
+let _playerItemCharacters = [];
+let _playerItemUsers = [];
+
+async function onPlayerItemUserChange() {
+  const userFilter = $('#playerItemUserFilter');
+  const characterFilter = $('#playerItemCharacterFilter');
+  if (!userFilter || !characterFilter) return;
+  const userId = userFilter.value || '';
+  const chars = userId ? _playerItemCharacters.filter((c) => c.userId === userId) : _playerItemCharacters;
+  characterFilter.innerHTML = '<option value="">全部角色</option>' + chars.map((c) =>
+    `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} (位${c.slot})</option>`
+  ).join('');
+}
+
 async function initPlayerItemFilters() {
+  const userFilter = $('#playerItemUserFilter');
   const characterFilter = $('#playerItemCharacterFilter');
   const itemFilter = $('#playerItemItemFilter');
-  if (!characterFilter || !itemFilter) return;
+  if (!userFilter || !characterFilter || !itemFilter) return;
   try {
-    const [charactersRes, itemsRes] = await Promise.all([
+    const [usersRes, charactersRes, itemsRes] = await Promise.all([
+      apiFetch('/admin/users'),
       apiFetch('/admin/characters'),
       apiFetch('/admin/items'),
     ]);
+    if (usersRes.ok) {
+      const { users } = await usersRes.json();
+      _playerItemUsers = users || [];
+      userFilter.innerHTML = '<option value="">全部账号</option>' + _playerItemUsers.map((u) =>
+        `<option value="${escapeHtml(u.id)}">${escapeHtml(u.username)}</option>`
+      ).join('');
+    }
     if (charactersRes.ok) {
       const { characters } = await charactersRes.json();
-      characterFilter.innerHTML = '<option value="">全部角色</option>' + (characters || []).map((c) =>
-        `<option value="${escapeHtml(c.id)}">${escapeHtml(c.username)} - ${escapeHtml(c.name)}</option>`
+      _playerItemCharacters = (characters || []).map((c) => ({ ...c, userId: c.userId }));
+      characterFilter.innerHTML = '<option value="">全部角色</option>' + _playerItemCharacters.map((c) =>
+        `<option value="${escapeHtml(c.id)}">${escapeHtml(c.username)} - ${escapeHtml(c.name)} (位${c.slot})</option>`
       ).join('');
     }
     if (itemsRes.ok) {

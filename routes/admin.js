@@ -626,7 +626,7 @@ router.get('/characters', authMiddleware, adminMiddleware, async (req, res) => {
       name: c.name || '',
       gold: c.gold ?? 0,
       rp: c.rp ?? 0,
-      backpackCapacity: c.backpackCapacity ?? 30,
+      backpackCapacity: c.backpackCapacity ?? 9999,
       created_at: c.created_at,
     }));
     res.json({ characters: list });
@@ -677,7 +677,7 @@ router.put('/characters/:id', authMiddleware, adminMiddleware, async (req, res) 
     }
     if (gold != null) character.gold = Math.max(0, Math.floor(Number(gold) || 0));
     if (rp != null) character.rp = Math.max(0, Math.floor(Number(rp) || 0));
-    if (backpackCapacity != null) character.backpackCapacity = Math.min(200, Math.max(10, Math.floor(Number(backpackCapacity) || 30)));
+    if (backpackCapacity != null) character.backpackCapacity = Math.min(99999, Math.max(10, Math.floor(Number(backpackCapacity) || 9999)));
     await character.save();
     const op = await User.findById(req.user.id).select('username');
     await logAdminAction(req.user.id, op?.username, 'character', `更新角色 ${character.name}`, character._id.toString());
@@ -707,8 +707,13 @@ router.delete('/characters/:id', authMiddleware, adminMiddleware, async (req, re
 
 router.get('/player-items', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { characterId, itemId } = req.query;
+    const { userId, characterId, itemId } = req.query;
     const filter = {};
+    if (userId) {
+      const chars = await Character.find({ user: userId }).select('_id').lean();
+      const charIds = chars.map((c) => c._id);
+      filter.character = { $in: charIds };
+    }
     if (characterId) filter.character = characterId;
     if (itemId) filter.item = itemId;
     const playerItems = await PlayerItem.find(filter)
@@ -752,9 +757,11 @@ router.post('/player-items', authMiddleware, adminMiddleware, async (req, res) =
       playerItem.quantity += qty;
       await playerItem.save();
     } else {
-      const cap = character.backpackCapacity ?? 30;
-      const count = await PlayerItem.countDocuments({ character: characterId });
-      if (count >= cap) return res.status(400).json({ error: `背包已满（${cap} 格），无法添加新物品` });
+      const cap = character.backpackCapacity ?? 9999;
+      if (cap < 9999) {
+        const count = await PlayerItem.countDocuments({ character: characterId });
+        if (count >= cap) return res.status(400).json({ error: `背包已满（${cap} 格），无法添加新物品` });
+      }
       const maxSlot = await PlayerItem.findOne({ character: characterId }).sort({ slot: -1 }).select('slot').lean();
       const nextSlot = (maxSlot?.slot ?? -1) + 1;
       playerItem = await PlayerItem.create({ character: characterId, item: itemId, quantity: qty, slot: nextSlot });

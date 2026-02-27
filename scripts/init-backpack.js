@@ -33,10 +33,10 @@ async function main() {
   }
   console.log(`PlayerItem slot 补全: ${updated} 条`);
 
-  // 2. 为无 backpackCapacity 的 Character 设置默认值
+  // 2. 为无 backpackCapacity 的 Character 设置默认值（9999=无限）
   const charUpdated = await Character.updateMany(
     { $or: [{ backpackCapacity: { $exists: false } }, { backpackCapacity: null }] },
-    { $set: { backpackCapacity: 30 } }
+    { $set: { backpackCapacity: 9999 } }
   );
   console.log(`Character backpackCapacity 补全: ${charUpdated.modifiedCount} 条`);
 

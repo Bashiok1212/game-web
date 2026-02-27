@@ -164,7 +164,7 @@ router.get('/user/characters', authMiddleware, async (req, res) => {
         rp: c?.rp ?? 0,
         x: c?.x ?? 0,
         y: c?.y ?? 0,
-        backpackCapacity: c?.backpackCapacity ?? 30,
+        backpackCapacity: c?.backpackCapacity ?? 9999,
       });
     }
     res.json({ characters: list });
@@ -232,7 +232,7 @@ router.get('/user/player-items', authMiddleware, async (req, res) => {
       quantity: pi.quantity,
       slot: pi.slot ?? 0,
     }));
-    const capacity = character.backpackCapacity ?? 30;
+    const capacity = character.backpackCapacity ?? 9999;
     res.json({ playerItems: list, backpackCapacity: capacity, usedSlots: list.length });
   } catch (err) {
     console.error('Get user player-items error:', err.message);

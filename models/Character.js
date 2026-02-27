@@ -25,9 +25,9 @@ const characterSchema = new mongoose.Schema({
   y: { type: Number, default: 0 },
   backpackCapacity: {
     type: Number,
-    default: 30,
+    default: 9999,
     min: 10,
-    max: 200,
+    max: 99999,
   },
   created_at: {
     type: Date,

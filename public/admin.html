@@ -39,7 +39,7 @@
         <button type="button" class="admin-tab" data-tab="skills">技能管理</button>
         <button type="button" class="admin-tab" data-tab="items">物品管理</button>
         <button type="button" class="admin-tab" data-tab="characters">角色管理</button>
-        <button type="button" class="admin-tab" data-tab="playerItems">玩家物品</button>
+        <button type="button" class="admin-tab" data-tab="playerItems">玩家背包</button>
         <button type="button" class="admin-tab" data-tab="festivals" id="tabFestivalsBtn">节日管理</button>
         <button type="button" class="admin-tab" data-tab="logs">操作日志</button>
       </nav>
@@ -270,7 +270,7 @@
               <option value="skill">技能</option>
               <option value="item">物品</option>
               <option value="character">角色</option>
-              <option value="player_item">玩家物品</option>
+              <option value="player_item">玩家背包</option>
               <option value="festival">节日</option>
             </select>
             <button type="button" id="btnLogSearch" class="btn btn-primary">筛选</button>
@@ -316,8 +316,12 @@
       </section>
 
       <section id="tabPlayerItems" class="admin-tab-panel">
+        <p class="festival-hint" style="margin-bottom:0.5rem">查看玩家背包内容，可按账号或角色筛选。</p>
         <div class="spirits-toolbar">
           <div class="spirits-search">
+            <select id="playerItemUserFilter">
+              <option value="">全部账号</option>
+            </select>
             <select id="playerItemCharacterFilter">
               <option value="">全部角色</option>
             </select>
@@ -580,7 +584,7 @@
             </div>
             <div class="form-row">
               <label>背包容量（格）</label>
-              <input type="number" name="backpackCapacity" min="10" max="200" value="30" placeholder="30" title="角色背包可容纳的不同物品种类数">
+              <input type="number" name="backpackCapacity" min="10" max="99999" value="9999" placeholder="9999=无限" title="角色背包可容纳的不同物品种类数，9999 表示无限">
             </div>
             <div class="form-actions">
               <button type="button" class="btn btn-ghost" id="btnCancelCharacter">取消</button>

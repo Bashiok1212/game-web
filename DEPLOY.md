@@ -76,10 +76,10 @@ git push origin main
 
 ### 云服务器操作
 
-SSH 登录服务器后，在**仓库根目录**（含 API.md、web/、deploy-pull.sh 的目录）执行：
+SSH 登录服务器后，在项目目录（含 package.json、server.js、deploy-pull.sh）执行：
 
 ```bash
-cd /root/web          # 或你的仓库根目录
+cd /root/web
 bash deploy-pull.sh
 ```
 

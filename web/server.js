@@ -90,8 +90,7 @@ function serveAdminPage(req, res) {
   } catch (_) {
     serverTimeStr = now.toLocaleString('zh-CN');
   }
-  html = html.replace('>服务器时间: 加载中...<', `>服务器时间: ${serverTimeStr}<`);
-  html = html.replace('id="serverTimeBanner">服务器时间: 加载中...</div>', `id="serverTimeBanner">服务器时间: ${serverTimeStr}</div>`);
+  html = html.replace(/服务器时间: 加载中\.\.\./g, `服务器时间: ${serverTimeStr}`);
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.set('Pragma', 'no-cache');
   res.type('html').send(html);
@@ -102,6 +101,13 @@ app.get('/admin/', (req, res) => {
 });
 app.get('/admin.html', (req, res) => {
   res.redirect(301, '/admin');
+});
+
+// 诊断：确认服务端动态内容是否生效（访问 /admin-check 查看）
+app.get('/admin-check', (req, res) => {
+  const t = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+  res.set('Cache-Control', 'no-store');
+  res.type('html').send(`<h1>服务端正常</h1><p>服务器时间: ${t}</p><p><a href="/admin">进入管理后台</a></p>`);
 });
 
 app.use(express.static(path.join(__dirname, 'public')));

@@ -71,19 +71,43 @@ npm run dev
 git add .
 git commit -m "feat: 描述本次修改"
 git push origin main
-# 若默认分支是 master，则：git push origin master
 ```
 
-### 云服务器操作
+### 云服务器：拉取最新代码并部署
 
-SSH 登录服务器后，在项目目录（含 package.json、server.js、deploy-pull.sh）执行：
+SSH 登录后执行：
 
 ```bash
 cd /root/web
 bash deploy-pull.sh
 ```
 
-脚本会自动完成：`git pull` → `npm install --production` → 重启服务（pm2）。
+脚本会自动完成：`git pull` → 检查 .env → `npm install` → 重启 pm2。
+
+### 云服务器：拉取指定分支
+
+```bash
+cd /root/web
+git fetch origin
+git checkout main          # 使用 main 分支
+git pull origin main       # 拉取 main 最新
+# 或
+git checkout master
+git pull origin master
+```
+
+### 云服务器重启后（开机自启）
+
+若已执行过 `pm2 save` 和 `pm2 startup`，pm2 会在服务器重启后自动拉起 game-web，无需手动操作。
+
+若未配置开机自启：
+
+```bash
+cd /root/web
+pm2 start server.js --name game-web
+pm2 save
+pm2 startup   # 按提示执行输出的命令，配置开机自启
+```
 
 ---
 
@@ -109,6 +133,8 @@ git push -u origin main
 
 | 项目 | 说明 |
 |------|------|
+| 仓库 | https://github.com/Bashiok1212/game-web |
+| 默认分支 | main |
 | 技术栈 | Node.js + Express + MongoDB |
 | 入口文件 | `server.js` |
 | 启动命令 | `npm run dev`（开发）/ `npm start`（生产） |

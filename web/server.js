@@ -80,7 +80,7 @@ app.use('/api', miscRoutes);
 app.use('/api', authRoutes);
 
 // 管理后台（放在 static 之前）- 服务端注入服务器时间，确保直接可见
-app.get('/admin', (req, res) => {
+function serveAdminPage(req, res) {
   const htmlPath = path.resolve(__dirname, 'public', 'admin.html');
   let html = fs.readFileSync(htmlPath, 'utf8');
   const now = new Date();
@@ -91,11 +91,16 @@ app.get('/admin', (req, res) => {
     serverTimeStr = now.toLocaleString('zh-CN');
   }
   html = html.replace('>服务器时间: 加载中...<', `>服务器时间: ${serverTimeStr}<`);
+  html = html.replace('id="serverTimeBanner">服务器时间: 加载中...</div>', `id="serverTimeBanner">服务器时间: ${serverTimeStr}</div>`);
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.set('Pragma', 'no-cache');
   res.type('html').send(html);
-});
+}
+app.get('/admin', serveAdminPage);
 app.get('/admin/', (req, res) => {
+  res.redirect(301, '/admin');
+});
+app.get('/admin.html', (req, res) => {
   res.redirect(301, '/admin');
 });
 

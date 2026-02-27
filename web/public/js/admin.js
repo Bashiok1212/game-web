@@ -1278,6 +1278,9 @@ async function initPlayerItemFilters() {
 
 // 初始化
 (function init() {
+  // 页面加载即显示服务器时间（登录前后都可见）
+  loadServerTime();
+
   const token = getToken();
   const user = getUser();
   if (!token || !user) {

@@ -1,4 +1,9 @@
+// 首次启动时确保 .env 和 JWT_SECRET 存在
+try { require('./scripts/ensure-env.js'); } catch (e) { console.error('ensure-env:', e.message); }
 require('dotenv').config();
+
+process.on('uncaughtException', (err) => { console.error('uncaughtException:', err); });
+process.on('unhandledRejection', (err) => { console.error('unhandledRejection:', err); });
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');

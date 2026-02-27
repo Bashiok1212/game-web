@@ -129,6 +129,21 @@ A: 推荐使用 pm2：`npm install -g pm2`，然后 `pm2 start server.js --name 
 **Q: deploy-pull.sh 无执行权限？**  
 A: 执行 `chmod +x deploy-pull.sh`。
 
+**Q: 502 或 pm2 显示 errored、不断重启？**  
+A: 先查看日志：`pm2 logs game-web`。常见原因：
+1. **未设置 JWT_SECRET**（生产环境必填）：
+   ```bash
+   cd /root/web
+   cp .env.example .env
+   nano .env   # 修改 JWT_SECRET 为至少 32 位随机字符串
+   # 或启动时传入：JWT_SECRET=你的密钥 pm2 start server.js --name game-web
+   ```
+2. **MongoDB 未启动**：
+   ```bash
+   systemctl start mongod   # 或 docker start mongo
+   ```
+3. **依赖未安装**：`npm install --production`
+
 **Q: 推送后网页没更新？**  
 A: 推送只是把代码传到 GitHub，服务器不会自动更新。需要 SSH 登录服务器后执行：
 ```bash

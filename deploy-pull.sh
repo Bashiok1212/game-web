@@ -5,8 +5,12 @@ set -e
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo "========== 部署 =========="
 [ -f "package.json" ] || { echo "错误: 未找到 package.json"; exit 1; }
+
 git fetch origin
 git reset --hard origin/main
+
+# 确保 .env 存在且 JWT_SECRET 已配置（git 不跟踪 .env）
+node scripts/ensure-env.js 2>/dev/null || true
 npm install --production
 pm2 restart game-web 2>/dev/null || pm2 start server.js --name game-web
 echo "部署完成 ✓"

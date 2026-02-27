@@ -2,9 +2,11 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const isProd = process.env.NODE_ENV === 'production';
+const PLACEHOLDER = 'your-secret-at-least-32-chars';
 
-if (isProd && !JWT_SECRET) {
-  console.error('生产环境必须设置 JWT_SECRET 环境变量');
+if (isProd && (!JWT_SECRET || JWT_SECRET === PLACEHOLDER)) {
+  console.error('生产环境必须设置 JWT_SECRET！请执行: cp .env.example .env 并修改 JWT_SECRET');
+  console.error('或运行: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))" 生成密钥');
   process.exit(1);
 }
 

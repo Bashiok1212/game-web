@@ -553,9 +553,12 @@ router.post('/festivals', authMiddleware, adminMiddleware, async (req, res) => {
       updated_at: festival.updated_at,
     });
   } catch (err) {
-    if (err.name === 'ValidationError') return res.status(400).json({ error: err.message || '数据校验失败' });
-    console.error('Admin festival create error:', err.message);
-    res.status(500).json({ error: '添加节日失败' });
+    if (err.name === 'ValidationError') {
+      const msg = err.errors ? Object.values(err.errors).map((e) => e.message).join('; ') : (err.message || '数据校验失败');
+      return res.status(400).json({ error: msg });
+    }
+    console.error('Admin festival create error:', err);
+    res.status(500).json({ error: err.message || '添加节日失败' });
   }
 });
 

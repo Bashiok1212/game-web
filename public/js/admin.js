@@ -1106,17 +1106,33 @@ festivalModal?.addEventListener('click', (e) => { if (e.target === festivalModal
 formFestival?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const form = e.target;
-  const id = form.festivalId?.value;
-  const startVal = form.startDate?.value;
-  const endVal = form.endDate?.value;
+  const el = (n) => form.elements?.namedItem?.(n) || form.querySelector(`[name="${n}"]`);
+  const id = el('festivalId')?.value || '';
+  const startVal = el('startDate')?.value || '';
+  const endVal = el('endDate')?.value || '';
+  const nameVal = (el('name')?.value || '').trim();
+  if (!nameVal || !startVal || !endVal) {
+    alert('请填写节日名称、开始日期和结束日期');
+    return;
+  }
+  const startDate = new Date(startVal);
+  const endDate = new Date(endVal);
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    alert('请填写有效的日期格式');
+    return;
+  }
+  if (endDate <= startDate) {
+    alert('结束日期必须晚于开始日期');
+    return;
+  }
   const payload = {
-    name: form.name?.value?.trim(),
-    startDate: startVal ? new Date(startVal).toISOString() : null,
-    endDate: endVal ? new Date(endVal).toISOString() : null,
-    shineRateBoost: parseFloat(form.shineRateBoost?.value) || 1,
-    goldBoost: parseFloat(form.goldBoost?.value) || 1,
-    expBoost: parseFloat(form.expBoost?.value) || 1,
-    captureRateBoost: parseFloat(form.captureRateBoost?.value) || 1,
+    name: nameVal,
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    shineRateBoost: Math.min(10, Math.max(1, parseFloat(el('shineRateBoost')?.value) || 1)),
+    goldBoost: Math.min(10, Math.max(1, parseFloat(el('goldBoost')?.value) || 1)),
+    expBoost: Math.min(10, Math.max(1, parseFloat(el('expBoost')?.value) || 1)),
+    captureRateBoost: Math.min(10, Math.max(1, parseFloat(el('captureRateBoost')?.value) || 1)),
   };
   try {
     if (id) {
@@ -1201,35 +1217,42 @@ function toDatetimeLocal(d) {
   return `${y}-${m}-${day}T${h}:${min}`;
 }
 
+function getFestivalFormEl(n) {
+  return formFestival?.elements?.namedItem?.(n) || formFestival?.querySelector?.(`[name="${n}"]`);
+}
+
 async function openFestivalModal(id) {
   if (id) {
     $('#festivalModalTitle').textContent = '编辑节日';
-    formFestival.festivalId.value = id;
+    const fid = getFestivalFormEl('festivalId');
+    if (fid) fid.value = id;
     try {
       const res = await apiFetch('/admin/festivals');
       if (!res.ok) return;
       const { festivals } = await res.json();
       const f = festivals.find((x) => x.id === id);
       if (!f) return;
-      formFestival.name.value = f.name || '';
-      formFestival.startDate.value = toDatetimeLocal(f.startDate);
-      formFestival.endDate.value = toDatetimeLocal(f.endDate);
-      formFestival.shineRateBoost.value = f.shineRateBoost ?? 1;
-      formFestival.goldBoost.value = f.goldBoost ?? 1;
-      formFestival.expBoost.value = f.expBoost ?? 1;
-      formFestival.captureRateBoost.value = f.captureRateBoost ?? 1;
+      const set = (n, v) => { const e = getFestivalFormEl(n); if (e) e.value = v; };
+      set('name', f.name || '');
+      set('startDate', toDatetimeLocal(f.startDate));
+      set('endDate', toDatetimeLocal(f.endDate));
+      set('shineRateBoost', f.shineRateBoost ?? 1);
+      set('goldBoost', f.goldBoost ?? 1);
+      set('expBoost', f.expBoost ?? 1);
+      set('captureRateBoost', f.captureRateBoost ?? 1);
       festivalModal.classList.remove('hidden');
     } catch (err) {
       console.error(err);
     }
   } else {
     $('#festivalModalTitle').textContent = '添加节日';
-    formFestival.reset();
-    formFestival.festivalId.value = '';
-    formFestival.shineRateBoost.value = 1;
-    formFestival.goldBoost.value = 1;
-    formFestival.expBoost.value = 1;
-    formFestival.captureRateBoost.value = 1;
+    formFestival?.reset();
+    const set = (n, v) => { const e = getFestivalFormEl(n); if (e) e.value = v; };
+    set('festivalId', '');
+    set('shineRateBoost', 1);
+    set('goldBoost', 1);
+    set('expBoost', 1);
+    set('captureRateBoost', 1);
     festivalModal.classList.remove('hidden');
   }
 }

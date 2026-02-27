@@ -9,6 +9,10 @@ mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 }).catch((err) =>
 
 mongoose.connection.on('connected', () => {
   console.log('MongoDB 已连接');
+  // 移除 festivals 集合的遗留 key_1 唯一索引（旧 schema 残留，会导致 E11000 duplicate key: { key: null }）
+  mongoose.connection.collection('festivals').dropIndex('key_1').catch((err) => {
+    if (err.code !== 27) console.error('drop key_1 index:', err.message);
+  });
 });
 
 module.exports = mongoose;

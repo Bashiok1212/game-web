@@ -76,14 +76,21 @@ git push origin main
 
 ### 云服务器操作
 
-SSH 登录服务器后，在项目目录执行：
+SSH 登录服务器后，在**仓库根目录**（含 API.md、web/ 的目录）执行：
+
+```bash
+cd /root/web          # 或你的仓库根目录
+bash web/scripts/deploy-pull.sh
+```
+
+若项目结构是 web 内容直接在根目录（有 package.json、server.js），则：
 
 ```bash
 cd /root/web
-./deploy-pull.sh
+bash scripts/deploy-pull.sh
 ```
 
-脚本会自动完成：`git pull` → `npm install --production` → 重启服务（pm2 或 systemd）。
+脚本会自动完成：`git pull` → `npm install --production` → 重启服务（pm2）。
 
 ---
 

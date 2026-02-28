@@ -241,8 +241,10 @@ router.get('/user/player-items', authMiddleware, async (req, res) => {
 });
 
 // 丢弃背包物品（用户只能丢弃自己角色的物品）
+// 支持 quantity 参数：DELETE ?quantity=N 或 POST body { quantity: N }，不传则丢弃全部
 router.delete('/user/player-items/:id', authMiddleware, async (req, res) => {
   try {
+    const quantity = parseInt(req.query?.quantity ?? req.body?.quantity ?? 0, 10);
     const playerItemId = req.params.id;
     const playerItem = await PlayerItem.findById(playerItemId);
     if (!playerItem) return res.status(404).json({ error: '物品不存在' });
@@ -250,8 +252,15 @@ router.delete('/user/player-items/:id', authMiddleware, async (req, res) => {
     if (!character || character.user.toString() !== req.user.id) {
       return res.status(403).json({ error: '无权丢弃该物品' });
     }
-    await PlayerItem.findByIdAndDelete(playerItemId);
-    res.json({ message: '已丢弃' });
+    const total = Math.max(1, playerItem.quantity ?? 1);
+    const toDiscard = quantity > 0 ? Math.min(quantity, total) : total;
+    if (toDiscard >= total) {
+      await PlayerItem.findByIdAndDelete(playerItemId);
+    } else {
+      playerItem.quantity = total - toDiscard;
+      await playerItem.save();
+    }
+    res.json({ message: '已丢弃', discarded: toDiscard });
   } catch (err) {
     console.error('Discard player-item error:', err.message);
     res.status(500).json({ error: '丢弃失败' });

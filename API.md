@@ -245,10 +245,10 @@
 **DELETE /api/user/player-items/:id** 或 **POST /api/user/player-items/:id/discard**
 
 - `:id`：玩家物品 ID（来自 GET /api/user/player-items 返回的 `playerItems[].id`）
+- `quantity`（可选）：丢弃数量，查询参数 `?quantity=N` 或 POST body `{ "quantity": N }`。不传或 0 表示丢弃全部
 - 仅可丢弃当前用户拥有的角色之物品
-- 客户端优先使用 POST（兼容部分代理/负载均衡对 DELETE 的限制）
 
-**成功 (200)**：`{ "message": "已丢弃" }`
+**成功 (200)**：`{ "message": "已丢弃", "discarded": N }`
 
 **错误**：404 物品不存在；403 无权丢弃该物品
 

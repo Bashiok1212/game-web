@@ -85,7 +85,8 @@ app.use('/api/user/password', authLimiter);
 
 app.use('/api/admin', adminRoutes);
 async function discardPlayerItemHandler(req, res) {
-  console.log('[Discard]', req.method, req.path, 'id=', req.params.id);
+  const quantity = parseInt(req.query?.quantity ?? req.body?.quantity ?? 0, 10);
+  console.log('[Discard]', req.method, req.path, 'id=', req.params.id, 'quantity=', quantity);
   try {
     const playerItemId = req.params.id;
     const playerItem = await PlayerItem.findById(playerItemId);
@@ -94,8 +95,15 @@ async function discardPlayerItemHandler(req, res) {
     if (!character || character.user.toString() !== req.user.id) {
       return res.status(403).json({ error: '无权丢弃该物品' });
     }
-    await PlayerItem.findByIdAndDelete(playerItemId);
-    res.json({ message: '已丢弃' });
+    const total = Math.max(1, playerItem.quantity ?? 1);
+    const toDiscard = quantity > 0 ? Math.min(quantity, total) : total;
+    if (toDiscard >= total) {
+      await PlayerItem.findByIdAndDelete(playerItemId);
+    } else {
+      playerItem.quantity = total - toDiscard;
+      await playerItem.save();
+    }
+    res.json({ message: '已丢弃', discarded: toDiscard });
   } catch (err) {
     console.error('Discard player-item error:', err.message);
     res.status(500).json({ error: '丢弃失败' });

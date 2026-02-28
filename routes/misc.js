@@ -65,4 +65,7 @@ router.get('/festival', async (req, res) => {
   }
 });
 
+// 未匹配的 /api/* 请求传递给后续路由（如 auth）
+router.use((req, res, next) => next());
+
 module.exports = router;

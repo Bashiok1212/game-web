@@ -240,6 +240,24 @@ router.get('/user/player-items', authMiddleware, async (req, res) => {
   }
 });
 
+// 丢弃背包物品（用户只能丢弃自己角色的物品）
+router.delete('/user/player-items/:id', authMiddleware, async (req, res) => {
+  try {
+    const playerItemId = req.params.id;
+    const playerItem = await PlayerItem.findById(playerItemId);
+    if (!playerItem) return res.status(404).json({ error: '物品不存在' });
+    const character = await Character.findById(playerItem.character);
+    if (!character || character.user.toString() !== req.user.id) {
+      return res.status(403).json({ error: '无权丢弃该物品' });
+    }
+    await PlayerItem.findByIdAndDelete(playerItemId);
+    res.json({ message: '已丢弃' });
+  } catch (err) {
+    console.error('Discard player-item error:', err.message);
+    res.status(500).json({ error: '丢弃失败' });
+  }
+});
+
 // 批量更新角色（游戏端创建/重命名）：body { characters: [{ name, gold, x, y }, ...] }
 router.put('/user/characters', authMiddleware, async (req, res) => {
   try {

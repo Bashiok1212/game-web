@@ -4,6 +4,7 @@ const Spirit = require('../models/Spirit');
 const Skill = require('../models/Skill');
 const Item = require('../models/Item');
 const PlayerItem = require('../models/PlayerItem');
+const STACK_LIMIT = PlayerItem.STACK_LIMIT;
 const Character = require('../models/Character');
 const Festival = require('../models/Festival');
 const AdminLog = require('../models/AdminLog');
@@ -751,24 +752,41 @@ router.post('/player-items', authMiddleware, adminMiddleware, async (req, res) =
     if (!character) return res.status(404).json({ error: '角色不存在' });
     const item = await Item.findById(itemId);
     if (!item) return res.status(404).json({ error: '物品不存在' });
-    const qty = Math.max(1, Math.min(9999, Number(quantity) || 1));
-    let playerItem = await PlayerItem.findOne({ character: characterId, item: itemId });
-    if (playerItem) {
-      playerItem.quantity += qty;
-      await playerItem.save();
-    } else {
-      const cap = character.backpackCapacity ?? 9999;
+    const totalToAdd = Math.max(1, Number(quantity) || 1);
+    const cap = character.backpackCapacity ?? 9999;
+
+    const existingSlots = await PlayerItem.find({ character: characterId, item: itemId }).sort({ slot: 1 });
+    let remaining = totalToAdd;
+    const createdIds = [];
+
+    for (const pi of existingSlots) {
+      if (remaining <= 0) break;
+      const space = STACK_LIMIT - (pi.quantity ?? 0);
+      if (space > 0) {
+        const add = Math.min(remaining, space);
+        pi.quantity += add;
+        await pi.save();
+        remaining -= add;
+        createdIds.push(pi._id.toString());
+      }
+    }
+
+    while (remaining > 0) {
       if (cap < 9999) {
         const count = await PlayerItem.countDocuments({ character: characterId });
         if (count >= cap) return res.status(400).json({ error: `背包已满（${cap} 格），无法添加新物品` });
       }
       const maxSlot = await PlayerItem.findOne({ character: characterId }).sort({ slot: -1 }).select('slot').lean();
       const nextSlot = (maxSlot?.slot ?? -1) + 1;
-      playerItem = await PlayerItem.create({ character: characterId, item: itemId, quantity: qty, slot: nextSlot });
+      const add = Math.min(remaining, STACK_LIMIT);
+      const playerItem = await PlayerItem.create({ character: characterId, item: itemId, quantity: add, slot: nextSlot });
+      remaining -= add;
+      createdIds.push(playerItem._id.toString());
     }
+
     const op = await User.findById(req.user.id).select('username');
-    await logAdminAction(req.user.id, op?.username, 'player_item', `发放 ${item.name} x${qty} 给角色`, playerItem._id.toString());
-    res.status(201).json({ message: '发放成功', id: playerItem._id.toString() });
+    await logAdminAction(req.user.id, op?.username, 'player_item', `发放 ${item.name} x${totalToAdd} 给角色`, createdIds[0] || '');
+    res.status(201).json({ message: '发放成功', id: createdIds[0] || '' });
   } catch (err) {
     if (err.name === 'ValidationError') return res.status(400).json({ error: err.message || '数据校验失败' });
     console.error('Admin player-item create error:', err.message);
@@ -781,7 +799,7 @@ router.put('/player-items/:id', authMiddleware, adminMiddleware, async (req, res
     const { quantity } = req.body;
     const playerItem = await PlayerItem.findById(req.params.id);
     if (!playerItem) return res.status(404).json({ error: '记录不存在' });
-    const qty = Math.max(1, Math.min(9999, Number(quantity) || 1));
+    const qty = Math.max(1, Math.min(STACK_LIMIT, Number(quantity) || 1));
     playerItem.quantity = qty;
     await playerItem.save();
     const op = await User.findById(req.user.id).select('username');

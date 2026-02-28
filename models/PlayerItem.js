@@ -16,6 +16,7 @@ const playerItemSchema = new mongoose.Schema({
     type: Number,
     default: 1,
     min: 1,
+    max: STACK_LIMIT,
   },
   slot: {
     type: Number,
@@ -33,7 +34,8 @@ const playerItemSchema = new mongoose.Schema({
   },
 });
 
-playerItemSchema.index({ character: 1, item: 1 }, { unique: true });
+// 单格堆叠上限 99，同物品可占多格，故不设 character+item 唯一索引
+playerItemSchema.index({ character: 1, item: 1 });
 playerItemSchema.index({ character: 1, slot: 1 });
 
 playerItemSchema.pre('save', function (next) {
@@ -44,3 +46,4 @@ playerItemSchema.pre('save', function (next) {
 const PlayerItem = mongoose.model('PlayerItem', playerItemSchema);
 
 module.exports = PlayerItem;
+module.exports.STACK_LIMIT = STACK_LIMIT;

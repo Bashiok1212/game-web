@@ -744,6 +744,21 @@ router.get('/player-items', authMiddleware, adminMiddleware, async (req, res) =>
   }
 });
 
+async function dropPlayerItemsUniqueIndex() {
+  try {
+    const mongoose = require('mongoose');
+    const coll = mongoose.connection.collection('playeritems');
+    const indexes = await coll.indexes();
+    const idx = indexes.find((i) => (i.name === 'character_1_item_1' || (i.key?.character && i.key?.item)) && i.unique);
+    if (idx) {
+      await coll.dropIndex(idx.name);
+      console.log('[Admin] 已删除 playeritems 唯一索引:', idx.name);
+    }
+  } catch (e) {
+    if (e.code !== 27 && e.codeName !== 'IndexNotFound') console.error('[Admin] drop index:', e.message);
+  }
+}
+
 router.post('/player-items', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { characterId, itemId, quantity } = req.body;
@@ -779,9 +794,18 @@ router.post('/player-items', authMiddleware, adminMiddleware, async (req, res) =
       const maxSlot = await PlayerItem.findOne({ character: characterId }).sort({ slot: -1 }).select('slot').lean();
       const nextSlot = (maxSlot?.slot ?? -1) + 1;
       const add = Math.min(remaining, STACK_LIMIT);
-      const playerItem = await PlayerItem.create({ character: characterId, item: itemId, quantity: add, slot: nextSlot });
-      remaining -= add;
-      createdIds.push(playerItem._id.toString());
+      try {
+        const playerItem = await PlayerItem.create({ character: characterId, item: itemId, quantity: add, slot: nextSlot });
+        remaining -= add;
+        createdIds.push(playerItem._id.toString());
+      } catch (createErr) {
+        if (createErr.code === 11000) {
+          await dropPlayerItemsUniqueIndex();
+          const retry = await PlayerItem.create({ character: characterId, item: itemId, quantity: add, slot: nextSlot });
+          remaining -= add;
+          createdIds.push(retry._id.toString());
+        } else throw createErr;
+      }
     }
 
     const op = await User.findById(req.user.id).select('username');
@@ -789,8 +813,9 @@ router.post('/player-items', authMiddleware, adminMiddleware, async (req, res) =
     res.status(201).json({ message: '发放成功', id: createdIds[0] || '' });
   } catch (err) {
     if (err.name === 'ValidationError') return res.status(400).json({ error: err.message || '数据校验失败' });
-    console.error('Admin player-item create error:', err.message);
-    res.status(500).json({ error: '发放物品失败' });
+    console.error('Admin player-item create error:', err.message, err.code || '');
+    const msg = err.code === 11000 ? '重复键：请执行 node scripts/migrate-stack-limit.js 或重启服务' : (err.message || '发放物品失败');
+    res.status(500).json({ error: msg });
   }
 });
 

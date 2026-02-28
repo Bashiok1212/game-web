@@ -12,13 +12,16 @@ const PlayerItem = require('../models/PlayerItem');
 const STACK_LIMIT = PlayerItem.STACK_LIMIT;
 
 async function run() {
+  if (mongoose.connection.readyState !== 1) {
+    await new Promise((resolve) => mongoose.connection.once('connected', resolve));
+  }
   const coll = mongoose.connection.collection('playeritems');
   try {
     const indexes = await coll.indexes();
-    const uniqueIdx = indexes.find((i) => i.name === 'character_1_item_1' && i.unique);
+    const uniqueIdx = indexes.find((i) => i.unique && i.key?.character && i.key?.item);
     if (uniqueIdx) {
-      await coll.dropIndex('character_1_item_1');
-      console.log('已删除 character+item 唯一索引');
+      await coll.dropIndex(uniqueIdx.name);
+      console.log('已删除 character+item 唯一索引:', uniqueIdx.name);
     }
   } catch (e) {
     if (e.code === 27 || e.codeName === 'IndexNotFound') console.log('索引已不存在，跳过');

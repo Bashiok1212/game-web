@@ -81,8 +81,10 @@ app.use('/api/register', authLimiter);
 app.use('/api/user/password', authLimiter);
 
 app.use('/api/admin', adminRoutes);
-app.use('/api', miscRoutes);
-app.use('/api', authRoutes);
+const apiRouter = express.Router();
+apiRouter.use(miscRoutes);
+apiRouter.use(authRoutes);
+app.use('/api', apiRouter);
 
 // 管理后台（放在 static 之前）- 服务端注入服务器时间，确保直接可见
 function serveAdminPage(req, res) {

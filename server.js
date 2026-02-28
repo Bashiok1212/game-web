@@ -15,6 +15,9 @@ require('./config/db');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const miscRoutes = require('./routes/misc');
+const { authMiddleware } = require('./middleware/auth');
+const Character = require('./models/Character');
+const PlayerItem = require('./models/PlayerItem');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -81,6 +84,22 @@ app.use('/api/register', authLimiter);
 app.use('/api/user/password', authLimiter);
 
 app.use('/api/admin', adminRoutes);
+app.delete('/api/user/player-items/:id', authMiddleware, async (req, res) => {
+  try {
+    const playerItemId = req.params.id;
+    const playerItem = await PlayerItem.findById(playerItemId);
+    if (!playerItem) return res.status(404).json({ error: '物品不存在' });
+    const character = await Character.findById(playerItem.character);
+    if (!character || character.user.toString() !== req.user.id) {
+      return res.status(403).json({ error: '无权丢弃该物品' });
+    }
+    await PlayerItem.findByIdAndDelete(playerItemId);
+    res.json({ message: '已丢弃' });
+  } catch (err) {
+    console.error('Discard player-item error:', err.message);
+    res.status(500).json({ error: '丢弃失败' });
+  }
+});
 const apiRouter = express.Router();
 apiRouter.use(miscRoutes);
 apiRouter.use(authRoutes);

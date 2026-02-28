@@ -13,18 +13,6 @@ mongoose.connection.on('connected', async () => {
   mongoose.connection.collection('festivals').dropIndex('key_1').catch((err) => {
     if (err.code !== 27) console.error('drop key_1 index:', err.message);
   });
-  // 移除 playeritems 的 character+item 唯一索引（堆叠上限 99 后允许多格同物品）
-  try {
-    const coll = mongoose.connection.collection('playeritems');
-    const indexes = await coll.indexes();
-    const uniqueIdx = indexes.find((i) => i.unique && i.key?.character && i.key?.item);
-    if (uniqueIdx) {
-      await coll.dropIndex(uniqueIdx.name);
-      console.log('已删除 playeritems 唯一索引:', uniqueIdx.name);
-    }
-  } catch (e) {
-    if (e.code !== 27 && e.codeName !== 'IndexNotFound') console.error('drop playeritems unique index:', e.message);
-  }
 });
 
 module.exports = mongoose;

@@ -85,6 +85,7 @@ app.use('/api/user/password', authLimiter);
 
 app.use('/api/admin', adminRoutes);
 async function discardPlayerItemHandler(req, res) {
+  console.log('[Discard]', req.method, req.path, 'id=', req.params.id);
   try {
     const playerItemId = req.params.id;
     const playerItem = await PlayerItem.findById(playerItemId);

@@ -7,7 +7,6 @@ process.on('unhandledRejection', (err) => { console.error('unhandledRejection:',
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 
@@ -61,27 +60,6 @@ const corsOpts = {
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 app.use(cors(corsOpts));
-
-// 全局限流
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: isProd ? 100 : 200,
-  message: { error: '请求过于频繁，请稍后再试' },
-  standardHeaders: true,
-  legacyHeaders: false,
-}));
-
-// 登录/注册严格限流（防暴力破解）
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 15,
-  message: { error: '尝试次数过多，请 15 分钟后再试' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api/login', authLimiter);
-app.use('/api/register', authLimiter);
-app.use('/api/user/password', authLimiter);
 
 app.use('/api/admin', adminRoutes);
 async function discardPlayerItemHandler(req, res) {

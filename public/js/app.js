@@ -20,6 +20,10 @@ const btnRegisterSubmit = $('#btnRegisterSubmit');
 const btnLoginSubmit = $('#formLogin')?.querySelector('button[type="submit"]');
 const pwdOverlay = $('#pwdOverlay');
 const btnClosePwd = $('#btnClosePwd');
+const characterEditOverlay = $('#characterEditOverlay');
+const btnCloseCharacterEdit = $('#btnCloseCharacterEdit');
+const btnCancelCharacterEdit = $('#btnCancelCharacterEdit');
+const formCharacterEdit = $('#formCharacterEdit');
 
 function showMessage(text, type) {
   if (!message) return;

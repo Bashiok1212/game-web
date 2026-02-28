@@ -229,6 +229,8 @@ router.get('/user/player-items', authMiddleware, async (req, res) => {
       itemName: pi.item?.name || '',
       itemCategory: pi.item?.category || '',
       itemImage: pi.item?.image || '',
+      itemDescription: pi.item?.description || '',
+      itemEffect: pi.item?.effect || '',
       quantity: pi.quantity,
       slot: pi.slot ?? 0,
     }));

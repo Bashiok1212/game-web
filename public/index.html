@@ -81,6 +81,29 @@
       </div>
     </div>
 
+    <!-- 角色参数编辑弹层（手动调整角色名、金币、RP） -->
+    <div id="characterEditOverlay" class="auth-overlay hidden">
+      <div class="auth-modal">
+        <button class="auth-close" id="btnCloseCharacterEdit" aria-label="关闭">&times;</button>
+        <div class="form-card">
+          <h3>调整角色参数</h3>
+          <form id="formCharacterEdit" novalidate>
+            <input type="hidden" name="characterIndex" value="0">
+            <label class="form-label">角色名</label>
+            <input type="text" name="name" maxlength="20" placeholder="角色名称" autocomplete="off">
+            <label class="form-label">金币</label>
+            <input type="number" name="gold" min="0" max="999999999" value="0" placeholder="0">
+            <label class="form-label">RP</label>
+            <input type="number" name="rp" min="0" max="999999999" value="0" placeholder="0">
+            <div class="form-actions">
+              <button type="button" class="btn btn-ghost" id="btnCancelCharacterEdit">取消</button>
+              <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <div id="message" class="message hidden"></div>
   </main>
 

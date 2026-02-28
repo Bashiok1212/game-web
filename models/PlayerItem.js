@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 
+/** 单格堆叠上限，超出部分占用新格子 */
+const STACK_LIMIT = 99;
+
 // 玩家物品（背包）- 关联角色与物品，记录数量与格子位置（每个账号 3 个角色）
 const playerItemSchema = new mongoose.Schema({
   character: {

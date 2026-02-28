@@ -242,10 +242,11 @@
 
 ### 2.8 丢弃背包物品
 
-**DELETE /api/user/player-items/:id**
+**DELETE /api/user/player-items/:id** 或 **POST /api/user/player-items/:id/discard**
 
 - `:id`：玩家物品 ID（来自 GET /api/user/player-items 返回的 `playerItems[].id`）
 - 仅可丢弃当前用户拥有的角色之物品
+- 客户端优先使用 POST（兼容部分代理/负载均衡对 DELETE 的限制）
 
 **成功 (200)**：`{ "message": "已丢弃" }`
 

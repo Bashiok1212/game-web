@@ -84,7 +84,7 @@ app.use('/api/register', authLimiter);
 app.use('/api/user/password', authLimiter);
 
 app.use('/api/admin', adminRoutes);
-app.delete('/api/user/player-items/:id', authMiddleware, async (req, res) => {
+async function discardPlayerItemHandler(req, res) {
   try {
     const playerItemId = req.params.id;
     const playerItem = await PlayerItem.findById(playerItemId);
@@ -99,7 +99,9 @@ app.delete('/api/user/player-items/:id', authMiddleware, async (req, res) => {
     console.error('Discard player-item error:', err.message);
     res.status(500).json({ error: '丢弃失败' });
   }
-});
+}
+app.delete('/api/user/player-items/:id', authMiddleware, discardPlayerItemHandler);
+app.post('/api/user/player-items/:id/discard', authMiddleware, discardPlayerItemHandler);
 const apiRouter = express.Router();
 apiRouter.use(miscRoutes);
 apiRouter.use(authRoutes);

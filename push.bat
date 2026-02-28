@@ -17,7 +17,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-git push origin master:main
+git push origin HEAD:main
 echo.
 if errorlevel 1 (
   echo 推送失败，请检查网络或远程仓库

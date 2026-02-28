@@ -3,6 +3,11 @@ const Festival = require('../models/Festival');
 
 const router = express.Router();
 
+// 健康检查（用于验证部署是否包含 discard 等接口）
+router.get('/health', (req, res) => {
+  res.json({ ok: true, discard: 'POST /api/user/player-items/:id/discard' });
+});
+
 // 获取服务器时间（无需鉴权）
 router.get('/time', (req, res) => {
   try {

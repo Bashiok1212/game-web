@@ -41,6 +41,7 @@
         <button type="button" class="admin-tab" data-tab="characters">角色管理</button>
         <button type="button" class="admin-tab" data-tab="playerItems">玩家背包</button>
         <button type="button" class="admin-tab" data-tab="festivals" id="tabFestivalsBtn">节日管理</button>
+        <button type="button" class="admin-tab" data-tab="owChat" id="tabOwChatBtn">OW 聊天</button>
         <button type="button" class="admin-tab" data-tab="logs">操作日志</button>
       </nav>
 
@@ -288,6 +289,17 @@
             </thead>
             <tbody id="logsTableBody"></tbody>
           </table>
+        </div>
+      </section>
+
+      <section id="tabOwChat" class="admin-tab-panel">
+        <div class="ow-chat">
+          <div class="ow-chat-messages" id="owChatMessages"></div>
+          <form id="owChatForm" class="ow-chat-form">
+            <input type="text" id="owChatInput" placeholder="输入要广播的系统消息（仅 OW 可见此页）" maxlength="200" autocomplete="off">
+            <button type="submit" class="btn btn-primary">发送</button>
+            <span id="owChatStatus" class="ow-chat-status"></span>
+          </form>
         </div>
       </section>
 

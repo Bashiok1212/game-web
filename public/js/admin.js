@@ -147,6 +147,8 @@ async function loadDashboard() {
   if ($('#adminUser')) $('#adminUser').textContent = (user?.username || '') + (user?.role === 'ow' ? ' (OW)' : '');
   const tabFestivalsBtn = $('#tabFestivalsBtn');
   if (tabFestivalsBtn) tabFestivalsBtn.style.display = user?.role === 'ow' ? '' : 'none';
+  const tabOwChatBtn = $('#tabOwChatBtn');
+  if (tabOwChatBtn) tabOwChatBtn.style.display = user?.role === 'ow' ? '' : 'none';
 
   try {
     const [statsRes, usersRes] = await Promise.all([
@@ -262,6 +264,88 @@ async function deleteUser(userId, username) {
   }
 }
 
+// ========== OW 聊天（WebSocket，即时） ==========
+
+let owChatWs = null;
+let owChatWsConnected = false;
+let owChatInited = false;
+
+function getWsUrl() {
+  const token = getToken();
+  if (!token) return '';
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${proto}//${location.host}/ws?token=${encodeURIComponent(token)}`;
+}
+
+function appendOwChatMessage(msg) {
+  const box = $('#owChatMessages');
+  if (!box) return;
+  const time = msg.created_at ? new Date(msg.created_at).toLocaleTimeString('zh-CN', { hour12: false }) : new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  const sender = msg.sender || '系统';
+  const content = msg.content || '';
+  const div = document.createElement('div');
+  div.className = 'ow-chat-message';
+  div.innerHTML = `<span class="time">[${escapeHtml(time)}]</span><span class="sender">${escapeHtml(sender)}</span><span class="content">${escapeHtml(content)}</span>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function setOwChatStatus(text) {
+  const el = $('#owChatStatus');
+  if (el) el.textContent = text || '';
+}
+
+function initOwChat() {
+  if (owChatInited) return;
+  const user = getUser();
+  if (!user || user.role !== 'ow') return;
+  owChatInited = true;
+
+  const form = $('#owChatForm');
+  const input = $('#owChatInput');
+  if (form && input) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text || !owChatWsConnected || !owChatWs) return;
+      const payload = { type: 'chat_send', channel: 4, content: text, clientMsgId: 'admin-' + Date.now() };
+      try { owChatWs.send(JSON.stringify(payload)); } catch (_) {}
+      input.value = '';
+    });
+  }
+
+  const url = getWsUrl();
+  if (!url) {
+    setOwChatStatus('未登录，无法连接聊天');
+    return;
+  }
+  try {
+    owChatWs = new WebSocket(url);
+  } catch (err) {
+    console.error('OW chat ws error:', err);
+    setOwChatStatus('连接失败');
+    return;
+  }
+
+  owChatWs.onopen = () => {
+    owChatWsConnected = true;
+    setOwChatStatus('已连接');
+  };
+  owChatWs.onclose = () => {
+    owChatWsConnected = false;
+    setOwChatStatus('已断开');
+  };
+  owChatWs.onerror = () => {
+    setOwChatStatus('连接错误');
+  };
+  owChatWs.onmessage = (ev) => {
+    let data;
+    try { data = JSON.parse(ev.data); } catch (_) { return; }
+    if (!data || data.type !== 'chat_message' || !data.message) return;
+    appendOwChatMessage(data.message);
+  };
+}
+
 $('#btnLogout')?.addEventListener('click', () => {
   setToken(null);
   setUser(null);
@@ -294,6 +378,7 @@ document.querySelectorAll('.admin-tab').forEach((tab) => {
       loadPlayerItems();
     }
     else if (tab.dataset.tab === 'festivals') loadFestivals();
+    else if (tab.dataset.tab === 'owChat') initOwChat();
   });
 });
 

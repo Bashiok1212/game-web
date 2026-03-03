@@ -9,14 +9,18 @@ const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const WebSocket = require('ws');
 
 require('./config/db');
 const authRoutes = require('./routes/auth');
+const chatRoutes = require('./routes/chat');
 const adminRoutes = require('./routes/admin');
 const miscRoutes = require('./routes/misc');
-const { authMiddleware } = require('./middleware/auth');
+const { authMiddleware, JWT_SECRET } = require('./middleware/auth');
 const Character = require('./models/Character');
 const PlayerItem = require('./models/PlayerItem');
+const ChatMessage = require('./models/ChatMessage');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -92,6 +96,7 @@ app.post('/api/user/player-items/:id/discard', authMiddleware, discardPlayerItem
 const apiRouter = express.Router();
 apiRouter.use(miscRoutes);
 apiRouter.use(authRoutes);
+apiRouter.use(chatRoutes);
 app.use('/api', apiRouter);
 
 // 管理后台（放在 static 之前）- 服务端注入服务器时间，确保直接可见
@@ -137,6 +142,110 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: '服务器内部错误' });
 });
 
-app.listen(PORT, () => {
+// --- WebSocket: 原生 ws，用于即时聊天推送 ---
+function verifyWsToken(token) {
+  if (!token) return null;
+  try {
+    const jwt = require('jsonwebtoken');
+    return jwt.verify(token, JWT_SECRET);
+  } catch (_) {
+    return null;
+  }
+}
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server, path: '/ws' });
+const wsClients = new Set();
+
+function wsSendJson(ws, obj) {
+  try {
+    ws.send(JSON.stringify(obj));
+  } catch (_) {}
+}
+
+function broadcastJson(obj) {
+  const data = JSON.stringify(obj);
+  for (const client of wsClients) {
+    if (client.readyState === WebSocket.OPEN) {
+      try { client.send(data); } catch (_) {}
+    }
+  }
+}
+
+wss.on('connection', (ws, req) => {
+  const url = new URL(req.url, 'http://localhost');
+  const token = url.searchParams.get('token') || '';
+  const decoded = verifyWsToken(token);
+  if (!decoded) {
+    ws.close(1008, 'unauthorized');
+    return;
+  }
+  ws.user = decoded;
+  wsClients.add(ws);
+  wsSendJson(ws, { type: 'hello', user: { id: decoded.id, username: decoded.username } });
+
+  ws.on('message', async (buf) => {
+    let payload;
+    try {
+      payload = JSON.parse(buf.toString('utf8'));
+    } catch (_) {
+      return;
+    }
+    if (!payload || typeof payload !== 'object') return;
+    const type = payload.type || '';
+
+    if (type === 'ping') {
+      wsSendJson(ws, { type: 'pong', t: Date.now() });
+      return;
+    }
+
+    if (type === 'chat_send') {
+      let channel = Number(payload.channel);
+      if (!Number.isFinite(channel) || channel < 0 || channel > 4) channel = 0;
+      let content = typeof payload.content === 'string' ? payload.content.trim() : '';
+      if (!content) return;
+      if (content.length > 200) content = content.slice(0, 200);
+
+      const clientMsgId = typeof payload.clientMsgId === 'string' ? payload.clientMsgId.slice(0, 64) : '';
+      const senderName = ws.user?.username ? String(ws.user.username).slice(0, 32) : '玩家';
+
+      // 落库（HTTP /chat/send 也会落库；ws 用于即时性）
+      let msg;
+      try {
+        msg = await ChatMessage.create({
+          user: ws.user.id,
+          channel,
+          senderName,
+          content,
+        });
+      } catch (err) {
+        wsSendJson(ws, { type: 'error', error: 'chat_save_failed' });
+        return;
+      }
+
+      broadcastJson({
+        type: 'chat_message',
+        message: {
+          id: msg._id.toString(),
+          channel: msg.channel,
+          sender: msg.senderName,
+          content: msg.content,
+          created_at: msg.created_at.toISOString(),
+          clientMsgId,
+        }
+      });
+    }
+  });
+
+  ws.on('close', () => {
+    wsClients.delete(ws);
+  });
+  ws.on('error', () => {
+    wsClients.delete(ws);
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`服务器运行在 http://localhost:${PORT}${isProd ? ' (生产)' : ''}`);
+  console.log(`WebSocket 运行在 ws://localhost:${PORT}/ws`);
 });

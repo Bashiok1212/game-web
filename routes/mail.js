@@ -130,5 +130,20 @@ router.post('/mail/:id/claim', authMiddleware, async (req, res) => {
   }
 });
 
+// 删除邮件（仅限当前用户自己的邮件）
+// DELETE /api/mail/:id
+router.delete('/mail/:id', authMiddleware, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const mail = await Mail.findOne({ _id: id, user: req.user.id });
+    if (!mail) return res.status(404).json({ error: '邮件不存在' });
+    await Mail.deleteOne({ _id: id, user: req.user.id });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Mail delete error:', err.message);
+    res.status(500).json({ error: '删除邮件失败' });
+  }
+});
+
 module.exports = router;
 

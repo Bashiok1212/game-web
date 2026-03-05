@@ -181,15 +181,23 @@ router.post('/mail/send', authMiddleware, adminMiddleware, async (req, res) => {
       return res.status(400).json({ error: '未找到目标用户' });
     }
 
-    const docs = users.map((u) => ({
-      user: u._id,
+    // 按角色维度发送：为每个角色生成一封邮件
+    const userIds = users.map((u) => u._id);
+    const characters = await Character.find({ user: { $in: userIds } }, { _id: 1, user: 1, slot: 1, name: 1 }).lean();
+    if (!characters || characters.length === 0) {
+      return res.status(400).json({ error: '目标账号下没有角色' });
+    }
+
+    const docs = characters.map((ch) => ({
+      user: ch.user,
+      character: ch._id,
       title: t,
       content: c,
     }));
     await Mail.insertMany(docs);
 
     const op = await User.findById(req.user.id).select('username');
-    await logAdminAction(req.user.id, op?.username, 'mail', `发送邮件「${t}」给 ${targetDesc}`, '');
+    await logAdminAction(req.user.id, op?.username, 'mail', `发送邮件「${t}」给 ${targetDesc} 的 ${characters.length} 个角色`, '');
 
     res.json({ ok: true, count: docs.length });
   } catch (err) {

@@ -3,11 +3,16 @@ const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
 const Mail = require('../models/Mail');
 
-// 获取未读邮件数量
-// GET /api/mail/unread-count
+// 获取未读邮件数量（按角色维度）
+// GET /api/mail/unread-count?characterId=xxx
 router.get('/mail/unread-count', authMiddleware, async (req, res) => {
   try {
-    const unread = await Mail.countDocuments({ user: req.user.id, isRead: false });
+    const { characterId } = req.query;
+    const filter = { user: req.user.id, isRead: false };
+    if (characterId) {
+      filter.character = characterId;
+    }
+    const unread = await Mail.countDocuments(filter);
     res.json({ ok: true, unread });
   } catch (err) {
     console.error('Mail unread-count error:', err.message);
@@ -15,13 +20,16 @@ router.get('/mail/unread-count', authMiddleware, async (req, res) => {
   }
 });
 
-// 获取邮件列表（最近 N 条）
-// GET /api/mail/list?limit=50
+// 获取邮件列表（最近 N 条，按角色维度）
+// GET /api/mail/list?characterId=xxx&limit=50
 router.get('/mail/list', authMiddleware, async (req, res) => {
   try {
+    const { characterId } = req.query;
     let limit = parseInt(req.query.limit, 10);
     if (!Number.isFinite(limit) || limit <= 0 || limit > 100) limit = 50;
-    const list = await Mail.find({ user: req.user.id })
+    const filter = { user: req.user.id };
+    if (characterId) filter.character = characterId;
+    const list = await Mail.find(filter)
       .sort({ created_at: -1 })
       .limit(limit)
       .lean();

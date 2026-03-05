@@ -90,11 +90,14 @@ router.post('/mail/:id/read', authMiddleware, async (req, res) => {
   }
 });
 
-// 领取附件：道具入背包、金币加角色、妖灵槽标记已领（妖灵发放需后续 PlayerSpirit）
-// POST /api/mail/:id/claim
+// 领取附件：不传 body 或 body 无 slotType 则领取全部；传 slotType + slotIndex 则只领该格
+// POST /api/mail/:id/claim   body 可选: { slotType: 'spirit'|'item'|'gold', slotIndex: 0 }
 router.post('/mail/:id/claim', authMiddleware, async (req, res) => {
   try {
     const id = req.params.id;
+    const { slotType, slotIndex } = req.body || {};
+    const singleSlot = slotType === 'spirit' || slotType === 'item' || slotType === 'gold';
+
     const mail = await Mail.findOne({ _id: id, user: req.user.id })
       .populate('character', '_id user')
       .populate('attachments.item', '_id number name');
@@ -106,49 +109,80 @@ router.post('/mail/:id/claim', authMiddleware, async (req, res) => {
     if (!character) return res.status(403).json({ error: '无权领取该角色的附件' });
 
     const attachments = mail.attachments || [];
-    const pendingItems = attachments.filter((a) => !a.claimed && a.item && a.quantity > 0);
-    const goldToClaim = (mail.gold > 0 && !mail.goldClaimed) ? Math.max(0, Math.floor(Number(mail.gold) || 0)) : 0;
     const spirits = mail.spirits || [];
-    const hasSpiritsToClaim = spirits.some((s) => s.spirit && !s.claimed);
-
-    const nothingToClaim = pendingItems.length === 0 && goldToClaim === 0 && !hasSpiritsToClaim;
-    if (nothingToClaim) {
-      return res.json({ ok: true, message: '没有可领取的附件', alreadyClaimed: true });
-    }
-
     const results = { items: [], gold: 0, spirits: 0 };
 
-    for (const att of pendingItems) {
-      const itemId = att.item._id;
-      let pi = await PlayerItem.findOne({ character: characterId, item: itemId });
-      if (!pi) {
-        pi = await PlayerItem.create({
-          character: characterId,
-          item: itemId,
-          quantity: att.quantity,
-        });
-      } else {
-        pi.quantity += att.quantity;
-        await pi.save();
-      }
-      att.claimed = true;
-      att.claimed_at = new Date();
-      results.items.push({ itemId: itemId.toString(), quantity: att.quantity });
-    }
-
-    if (goldToClaim > 0) {
-      character.gold = (character.gold || 0) + goldToClaim;
-      await character.save();
-      mail.goldClaimed = true;
-      mail.goldClaimedAt = new Date();
-      results.gold = goldToClaim;
-    }
-
-    for (const s of spirits) {
-      if (s.spirit && !s.claimed) {
+    if (singleSlot) {
+      const idx = typeof slotIndex === 'number' ? Math.max(0, Math.min(4, Math.floor(slotIndex))) : 0;
+      if (slotType === 'spirit') {
+        const s = spirits[idx];
+        if (!s || !s.spirit || s.claimed) {
+          return res.json({ ok: true, message: '该格无可领取', alreadyClaimed: true, received: results });
+        }
         s.claimed = true;
         s.claimed_at = new Date();
-        results.spirits += 1;
+        results.spirits = 1;
+      } else if (slotType === 'item') {
+        const att = attachments[idx];
+        if (!att || !att.item || att.quantity <= 0 || att.claimed) {
+          return res.json({ ok: true, message: '该格无可领取', alreadyClaimed: true, received: results });
+        }
+        const itemId = att.item._id;
+        let pi = await PlayerItem.findOne({ character: characterId, item: itemId });
+        if (!pi) {
+          pi = await PlayerItem.create({ character: characterId, item: itemId, quantity: att.quantity });
+        } else {
+          pi.quantity += att.quantity;
+          await pi.save();
+        }
+        att.claimed = true;
+        att.claimed_at = new Date();
+        results.items.push({ itemId: itemId.toString(), quantity: att.quantity });
+      } else if (slotType === 'gold') {
+        if (mail.gold <= 0 || mail.goldClaimed) {
+          return res.json({ ok: true, message: '该格无可领取', alreadyClaimed: true, received: results });
+        }
+        const goldToClaim = Math.max(0, Math.floor(Number(mail.gold) || 0));
+        character.gold = (character.gold || 0) + goldToClaim;
+        await character.save();
+        mail.goldClaimed = true;
+        mail.goldClaimedAt = new Date();
+        results.gold = goldToClaim;
+      }
+    } else {
+      const pendingItems = attachments.filter((a) => !a.claimed && a.item && a.quantity > 0);
+      const goldToClaim = (mail.gold > 0 && !mail.goldClaimed) ? Math.max(0, Math.floor(Number(mail.gold) || 0)) : 0;
+      const hasSpiritsToClaim = spirits.some((s) => s.spirit && !s.claimed);
+      const nothingToClaim = pendingItems.length === 0 && goldToClaim === 0 && !hasSpiritsToClaim;
+      if (nothingToClaim) {
+        return res.json({ ok: true, message: '没有可领取的附件', alreadyClaimed: true, received: results });
+      }
+      for (const att of pendingItems) {
+        const itemId = att.item._id;
+        let pi = await PlayerItem.findOne({ character: characterId, item: itemId });
+        if (!pi) {
+          pi = await PlayerItem.create({ character: characterId, item: itemId, quantity: att.quantity });
+        } else {
+          pi.quantity += att.quantity;
+          await pi.save();
+        }
+        att.claimed = true;
+        att.claimed_at = new Date();
+        results.items.push({ itemId: itemId.toString(), quantity: att.quantity });
+      }
+      if (goldToClaim > 0) {
+        character.gold = (character.gold || 0) + goldToClaim;
+        await character.save();
+        mail.goldClaimed = true;
+        mail.goldClaimedAt = new Date();
+        results.gold = goldToClaim;
+      }
+      for (const s of spirits) {
+        if (s.spirit && !s.claimed) {
+          s.claimed = true;
+          s.claimed_at = new Date();
+          results.spirits += 1;
+        }
       }
     }
 

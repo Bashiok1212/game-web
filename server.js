@@ -15,6 +15,7 @@ const WebSocket = require('ws');
 require('./config/db');
 const authRoutes = require('./routes/auth');
 const chatRoutes = require('./routes/chat');
+const mailRoutes = require('./routes/mail');
 const adminRoutes = require('./routes/admin');
 const miscRoutes = require('./routes/misc');
 const { authMiddleware, JWT_SECRET } = require('./middleware/auth');
@@ -97,6 +98,7 @@ const apiRouter = express.Router();
 apiRouter.use(miscRoutes);
 apiRouter.use(authRoutes);
 apiRouter.use(chatRoutes);
+apiRouter.use(mailRoutes);
 app.use('/api', apiRouter);
 
 // 管理后台（放在 static 之前）- 服务端注入服务器时间，确保直接可见

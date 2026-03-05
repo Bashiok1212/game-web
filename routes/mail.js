@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
 const Mail = require('../models/Mail');
+const PlayerItem = require('../models/PlayerItem');
+const Character = require('../models/Character');
 
 // 获取未读邮件数量（按角色维度）
 // GET /api/mail/unread-count?characterId=xxx
@@ -32,6 +34,7 @@ router.get('/mail/list', authMiddleware, async (req, res) => {
     const list = await Mail.find(filter)
       .sort({ created_at: -1 })
       .limit(limit)
+      .populate('attachments.item', 'number name image')
       .lean();
     const mails = list.map((m) => ({
       id: m._id.toString(),
@@ -40,6 +43,15 @@ router.get('/mail/list', authMiddleware, async (req, res) => {
       isRead: !!m.isRead,
       created_at: (m.created_at || new Date()).toISOString(),
       read_at: m.read_at ? m.read_at.toISOString() : null,
+      attachments: (m.attachments || []).map((a) => ({
+        id: a._id?.toString(),
+        itemId: a.item?._id?.toString() || null,
+        itemNumber: a.item?.number || 0,
+        itemName: a.item?.name || '',
+        itemImage: a.item?.image || '',
+        quantity: a.quantity || 0,
+        claimed: !!a.claimed,
+      })),
     }));
     res.json({ ok: true, mails });
   } catch (err) {
@@ -64,6 +76,57 @@ router.post('/mail/:id/read', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Mail mark-read error:', err.message);
     res.status(500).json({ error: '标记已读失败' });
+  }
+});
+
+// 领取附件：将未领取的附件发放到角色背包
+// POST /api/mail/:id/claim
+router.post('/mail/:id/claim', authMiddleware, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const mail = await Mail.findOne({ _id: id, user: req.user.id })
+      .populate('character', '_id user')
+      .populate('attachments.item', '_id number name');
+    if (!mail) return res.status(404).json({ error: '邮件不存在' });
+    if (!mail.character) return res.status(400).json({ error: '邮件未绑定角色' });
+
+    const characterId = mail.character._id;
+    const character = await Character.findOne({ _id: characterId, user: req.user.id });
+    if (!character) return res.status(403).json({ error: '无权领取该角色的附件' });
+
+    const attachments = mail.attachments || [];
+    const pending = attachments.filter((a) => !a.claimed && a.item && a.quantity > 0);
+    if (pending.length === 0) {
+      return res.json({ ok: true, message: '没有可领取的附件', alreadyClaimed: true });
+    }
+
+    const results = [];
+    for (const att of pending) {
+      const itemId = att.item._id;
+      let pi = await PlayerItem.findOne({ character: characterId, item: itemId });
+      if (!pi) {
+        pi = await PlayerItem.create({
+          character: characterId,
+          item: itemId,
+          quantity: att.quantity,
+        });
+      } else {
+        pi.quantity += att.quantity;
+        await pi.save();
+      }
+      att.claimed = true;
+      att.claimed_at = new Date();
+      results.push({ itemId: itemId.toString(), quantity: att.quantity });
+    }
+
+    mail.isRead = true;
+    if (!mail.read_at) mail.read_at = new Date();
+    await mail.save();
+
+    res.json({ ok: true, received: results });
+  } catch (err) {
+    console.error('Mail claim error:', err.message);
+    res.status(500).json({ error: '领取附件失败' });
   }
 });
 

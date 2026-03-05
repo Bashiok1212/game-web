@@ -143,9 +143,27 @@ router.delete('/users/:id', authMiddleware, adminMiddleware, async (req, res) =>
 
 // ========== 邮件发送 ==========
 
+function parseAttachmentsText(raw) {
+  const list = [];
+  if (!raw) return list;
+  const parts = String(raw).split(/[，,；;]+/);
+  for (const p of parts) {
+    const s = String(p || '').trim();
+    if (!s) continue;
+    const m = s.match(/^(\d+)(?:\s*[xX\*：:]\s*(\d+))?$/);
+    if (!m) continue;
+    const num = parseInt(m[1], 10);
+    const qty = parseInt(m[2] || '1', 10);
+    if (!Number.isFinite(num) || num <= 0) continue;
+    if (!Number.isFinite(qty) || qty <= 0) continue;
+    list.push({ number: num, quantity: qty });
+  }
+  return list;
+}
+
 router.post('/mail/send', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { targetType, targetValue, title, content } = req.body || {};
+    const { targetType, targetValue, title, content, attachmentsText } = req.body || {};
     const t = String(title || '').trim();
     let c = String(content || '').trim();
     if (!t || !c) {
@@ -181,7 +199,26 @@ router.post('/mail/send', authMiddleware, adminMiddleware, async (req, res) => {
       return res.status(400).json({ error: '未找到目标用户' });
     }
 
-    // 按角色维度发送：为每个角色生成一封邮件
+    // 解析附件：根据物品编号和数量
+    const attachmentSpecs = parseAttachmentsText(attachmentsText);
+    let attachmentItems = [];
+    if (attachmentSpecs.length > 0) {
+      const numbers = [...new Set(attachmentSpecs.map((a) => a.number))];
+      attachmentItems = await Item.find({ number: { $in: numbers } }, { _id: 1, number: 1, name: 1 }).lean();
+    }
+    const attachments = attachmentSpecs
+      .map((spec) => {
+        const item = attachmentItems.find((it) => it.number === spec.number);
+        if (!item) return null;
+        return {
+          item: item._id,
+          quantity: spec.quantity,
+          claimed: false,
+        };
+      })
+      .filter(Boolean);
+
+    // 按角色维度发送：为每个角色生成一封邮件（包含相同附件）
     const userIds = users.map((u) => u._id);
     const characters = await Character.find({ user: { $in: userIds } }, { _id: 1, user: 1, slot: 1, name: 1 }).lean();
     if (!characters || characters.length === 0) {
@@ -193,6 +230,7 @@ router.post('/mail/send', authMiddleware, adminMiddleware, async (req, res) => {
       character: ch._id,
       title: t,
       content: c,
+      attachments,
     }));
     await Mail.insertMany(docs);
 

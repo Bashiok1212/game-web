@@ -392,6 +392,7 @@ const mailTargetValueRow = $('#mailTargetValueRow');
 const mailTargetValueInput = $('#mailTargetValue');
 const mailTitleInput = $('#mailTitle');
 const mailContentInput = $('#mailContent');
+const mailAttachmentsInput = $('#mailAttachments');
 const adminMailStatus = $('#adminMailStatus');
 
 mailTargetTypeSelect?.addEventListener('change', () => {
@@ -411,6 +412,7 @@ adminMailForm?.addEventListener('submit', async (e) => {
   const targetValue = mailTargetValueInput?.value?.trim() || '';
   const title = mailTitleInput.value.trim();
   const content = mailContentInput.value.trim();
+  const attachmentsText = mailAttachmentsInput?.value?.trim() || '';
   if (!title || !content) {
     if (adminMailStatus) adminMailStatus.textContent = '标题和正文不能为空';
     return;
@@ -424,7 +426,7 @@ adminMailForm?.addEventListener('submit', async (e) => {
     const res = await apiFetch('/admin/mail/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetType, targetValue, title, content }),
+      body: JSON.stringify({ targetType, targetValue, title, content, attachmentsText }),
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok || !json || json.ok === false) {

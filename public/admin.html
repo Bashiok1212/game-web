@@ -329,6 +329,10 @@
               <label class="form-label">正文</label>
               <textarea id="mailContent" name="content" placeholder="支持纯文本，最长 2000 字" maxlength="2000" rows="6" required></textarea>
             </div>
+            <div class="form-row">
+              <label class="form-label">附件道具（可选）</label>
+              <input type="text" id="mailAttachments" name="attachmentsText" placeholder="格式：编号x数量，多条用逗号分隔，例如 1001x5,1002x1" maxlength="256">
+            </div>
             <div class="form-actions">
               <button type="submit" class="btn btn-primary">发送邮件</button>
               <span id="adminMailStatus" class="form-hint"></span>

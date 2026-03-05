@@ -39,6 +39,27 @@ const mailSchema = new mongoose.Schema({
   read_at: {
     type: Date,
   },
+  // 附件列表（例如道具奖励）
+  attachments: [
+    {
+      item: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Item',
+      },
+      quantity: {
+        type: Number,
+        default: 1,
+        min: 1,
+      },
+      claimed: {
+        type: Boolean,
+        default: false,
+      },
+      claimed_at: {
+        type: Date,
+      },
+    },
+  ],
 });
 
 const Mail = mongoose.model('Mail', mailSchema);

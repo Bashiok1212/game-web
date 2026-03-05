@@ -149,6 +149,8 @@ async function loadDashboard() {
   if (tabFestivalsBtn) tabFestivalsBtn.style.display = user?.role === 'ow' ? '' : 'none';
   const tabOwChatBtn = $('#tabOwChatBtn');
   if (tabOwChatBtn) tabOwChatBtn.style.display = user?.role === 'ow' ? '' : 'none';
+  const tabMailBtn = $('#tabMailBtn');
+  if (tabMailBtn) tabMailBtn.style.display = ['admin', 'ow'].includes(user?.role) ? '' : 'none';
 
   try {
     const [statsRes, usersRes] = await Promise.all([
@@ -380,6 +382,61 @@ document.querySelectorAll('.admin-tab').forEach((tab) => {
     else if (tab.dataset.tab === 'festivals') loadFestivals();
     else if (tab.dataset.tab === 'owChat') initOwChat();
   });
+});
+
+// ========== 管理后台：系统邮件发送 ==========
+
+const adminMailForm = $('#adminMailForm');
+const mailTargetTypeSelect = $('#mailTargetType');
+const mailTargetValueRow = $('#mailTargetValueRow');
+const mailTargetValueInput = $('#mailTargetValue');
+const mailTitleInput = $('#mailTitle');
+const mailContentInput = $('#mailContent');
+const adminMailStatus = $('#adminMailStatus');
+
+mailTargetTypeSelect?.addEventListener('change', () => {
+  const type = mailTargetTypeSelect.value;
+  if (type === 'all') {
+    mailTargetValueRow.style.display = 'none';
+    if (mailTargetValueInput) mailTargetValueInput.value = '';
+  } else {
+    mailTargetValueRow.style.display = '';
+  }
+});
+
+adminMailForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!mailTitleInput || !mailContentInput || !mailTargetTypeSelect) return;
+  const targetType = mailTargetTypeSelect.value || 'username';
+  const targetValue = mailTargetValueInput?.value?.trim() || '';
+  const title = mailTitleInput.value.trim();
+  const content = mailContentInput.value.trim();
+  if (!title || !content) {
+    if (adminMailStatus) adminMailStatus.textContent = '标题和正文不能为空';
+    return;
+  }
+  if (targetType !== 'all' && !targetValue) {
+    if (adminMailStatus) adminMailStatus.textContent = '请填写目标用户名或用户ID';
+    return;
+  }
+  if (adminMailStatus) adminMailStatus.textContent = '发送中...';
+  try {
+    const res = await apiFetch('/admin/mail/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetType, targetValue, title, content }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json || json.ok === false) {
+      if (adminMailStatus) adminMailStatus.textContent = json.error || '发送失败';
+      return;
+    }
+    if (adminMailStatus) adminMailStatus.textContent = `发送成功（共 ${json.count ?? 0} 人）`;
+    mailContentInput.value = '';
+  } catch (err) {
+    console.error(err);
+    if (adminMailStatus) adminMailStatus.textContent = '网络错误，发送失败';
+  }
 });
 
 $('#btnLogSearch')?.addEventListener('click', () => loadLogs());

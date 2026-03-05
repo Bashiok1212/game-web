@@ -6,6 +6,7 @@ const Item = require('../models/Item');
 const PlayerItem = require('../models/PlayerItem');
 const Character = require('../models/Character');
 const Festival = require('../models/Festival');
+const Mail = require('../models/Mail');
 const AdminLog = require('../models/AdminLog');
 const { authMiddleware } = require('../middleware/auth');
 const { adminMiddleware } = require('../middleware/admin');
@@ -137,6 +138,63 @@ router.delete('/users/:id', authMiddleware, adminMiddleware, async (req, res) =>
   } catch (err) {
     console.error('Delete user error:', err.message);
     res.status(500).json({ error: '操作失败' });
+  }
+});
+
+// ========== 邮件发送 ==========
+
+router.post('/mail/send', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { targetType, targetValue, title, content } = req.body || {};
+    const t = String(title || '').trim();
+    let c = String(content || '').trim();
+    if (!t || !c) {
+      return res.status(400).json({ error: '标题和正文均为必填' });
+    }
+    if (t.length > 64) c = c.slice(0, 64);
+    if (c.length > 2000) c = c.slice(0, 2000);
+
+    let users = [];
+    let targetDesc = '';
+
+    if (targetType === 'all') {
+      users = await User.find({}, { _id: 1, username: 1 }).lean();
+      targetDesc = `全部用户 (${users.length} 人)`;
+    } else if (targetType === 'userId') {
+      const id = String(targetValue || '').trim();
+      if (!id) return res.status(400).json({ error: '请填写用户ID' });
+      const u = await User.findById(id).lean();
+      if (!u) return res.status(404).json({ error: '用户不存在' });
+      users = [u];
+      targetDesc = `userId=${u._id.toString()} (${u.username})`;
+    } else {
+      // 默认按用户名
+      const username = String(targetValue || '').trim();
+      if (!username) return res.status(400).json({ error: '请填写用户名' });
+      const u = await User.findOne({ username }).lean();
+      if (!u) return res.status(404).json({ error: '用户不存在' });
+      users = [u];
+      targetDesc = `username=${u.username}`;
+    }
+
+    if (!users || users.length === 0) {
+      return res.status(400).json({ error: '未找到目标用户' });
+    }
+
+    const docs = users.map((u) => ({
+      user: u._id,
+      title: t,
+      content: c,
+    }));
+    await Mail.insertMany(docs);
+
+    const op = await User.findById(req.user.id).select('username');
+    await logAdminAction(req.user.id, op?.username, 'mail', `发送邮件「${t}」给 ${targetDesc}`, '');
+
+    res.json({ ok: true, count: docs.length });
+  } catch (err) {
+    console.error('Admin mail send error:', err.message);
+    res.status(500).json({ error: '发送邮件失败' });
   }
 });
 

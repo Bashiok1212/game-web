@@ -39,27 +39,27 @@ const mailSchema = new mongoose.Schema({
   read_at: {
     type: Date,
   },
-  // 附件列表（例如道具奖励）
+  // 附件列表（道具，最多 5 格）
   attachments: [
     {
-      item: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Item',
-      },
-      quantity: {
-        type: Number,
-        default: 1,
-        min: 1,
-      },
-      claimed: {
-        type: Boolean,
-        default: false,
-      },
-      claimed_at: {
-        type: Date,
-      },
+      item: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
+      quantity: { type: Number, default: 1, min: 1 },
+      claimed: { type: Boolean, default: false },
+      claimed_at: { type: Date },
     },
   ],
+  // 妖灵格子（最多 5 个）
+  spirits: [
+    {
+      spirit: { type: mongoose.Schema.Types.ObjectId, ref: 'Spirit' },
+      claimed: { type: Boolean, default: false },
+      claimed_at: { type: Date },
+    },
+  ],
+  // 金币附件
+  gold: { type: Number, default: 0, min: 0 },
+  goldClaimed: { type: Boolean, default: false },
+  goldClaimedAt: { type: Date },
 });
 
 const Mail = mongoose.model('Mail', mailSchema);

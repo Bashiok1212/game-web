@@ -163,7 +163,7 @@ function parseAttachmentsText(raw) {
 
 router.post('/mail/send', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { targetType, targetValue, title, content, attachmentsText } = req.body || {};
+    const { targetType, targetValue, title, content, attachmentsText, goldAmount, spiritsText } = req.body || {};
     const t = String(title || '').trim();
     let c = String(content || '').trim();
     if (!t || !c) {
@@ -207,6 +207,7 @@ router.post('/mail/send', authMiddleware, adminMiddleware, async (req, res) => {
       attachmentItems = await Item.find({ number: { $in: numbers } }, { _id: 1, number: 1, name: 1 }).lean();
     }
     const attachments = attachmentSpecs
+      .slice(0, 5)
       .map((spec) => {
         const item = attachmentItems.find((it) => it.number === spec.number);
         if (!item) return null;
@@ -217,6 +218,17 @@ router.post('/mail/send', authMiddleware, adminMiddleware, async (req, res) => {
         };
       })
       .filter(Boolean);
+
+    const gold = Math.max(0, Math.floor(Number(goldAmount) || 0));
+    const spiritNumbers = (String(spiritsText || '').trim().split(/[,，\s]+/).map((n) => parseInt(n, 10)).filter((n) => !isNaN(n) && n > 0)).slice(0, 5);
+    let spiritDocs = [];
+    if (spiritNumbers.length > 0) {
+      spiritDocs = await Spirit.find({ number: { $in: spiritNumbers } }, { _id: 1, number: 1 }).lean();
+    }
+    const spirits = spiritNumbers.slice(0, 5).map((num) => {
+      const sp = spiritDocs.find((s) => s.number === num);
+      return sp ? { spirit: sp._id, claimed: false } : null;
+    }).filter(Boolean);
 
     // 按角色维度发送：为每个角色生成一封邮件（包含相同附件）
     const userIds = users.map((u) => u._id);
@@ -231,6 +243,9 @@ router.post('/mail/send', authMiddleware, adminMiddleware, async (req, res) => {
       title: t,
       content: c,
       attachments,
+      spirits,
+      gold,
+      goldClaimed: false,
     }));
     await Mail.insertMany(docs);
 

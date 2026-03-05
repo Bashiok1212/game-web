@@ -330,7 +330,15 @@
               <textarea id="mailContent" name="content" placeholder="支持纯文本，最长 2000 字" maxlength="2000" rows="6" required></textarea>
             </div>
             <div class="form-row">
-              <label class="form-label">附件道具（可选）</label>
+              <label class="form-label">金币（可选）</label>
+              <input type="number" id="mailGold" name="goldAmount" placeholder="0" min="0" step="1" value="0">
+            </div>
+            <div class="form-row">
+              <label class="form-label">妖灵（可选，最多5个）</label>
+              <input type="text" id="mailSpirits" name="spiritsText" placeholder="妖灵编号逗号分隔，如 101,102,103" maxlength="64">
+            </div>
+            <div class="form-row">
+              <label class="form-label">附件道具（可选，最多5种）</label>
               <input type="text" id="mailAttachments" name="attachmentsText" placeholder="格式：编号x数量，多条用逗号分隔，例如 1001x5,1002x1" maxlength="256">
             </div>
             <div class="form-actions">

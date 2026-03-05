@@ -393,6 +393,8 @@ const mailTargetValueInput = $('#mailTargetValue');
 const mailTitleInput = $('#mailTitle');
 const mailContentInput = $('#mailContent');
 const mailAttachmentsInput = $('#mailAttachments');
+const mailGoldInput = $('#mailGold');
+const mailSpiritsInput = $('#mailSpirits');
 const adminMailStatus = $('#adminMailStatus');
 
 mailTargetTypeSelect?.addEventListener('change', () => {
@@ -413,6 +415,8 @@ adminMailForm?.addEventListener('submit', async (e) => {
   const title = mailTitleInput.value.trim();
   const content = mailContentInput.value.trim();
   const attachmentsText = mailAttachmentsInput?.value?.trim() || '';
+  const goldAmount = Math.max(0, parseInt(mailGoldInput?.value, 10) || 0);
+  const spiritsText = (mailSpiritsInput?.value?.trim() || '').replace(/\s+/g, '');
   if (!title || !content) {
     if (adminMailStatus) adminMailStatus.textContent = '标题和正文不能为空';
     return;
@@ -426,7 +430,7 @@ adminMailForm?.addEventListener('submit', async (e) => {
     const res = await apiFetch('/admin/mail/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetType, targetValue, title, content, attachmentsText }),
+      body: JSON.stringify({ targetType, targetValue, title, content, attachmentsText, goldAmount, spiritsText }),
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok || !json || json.ok === false) {

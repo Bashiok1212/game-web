@@ -35,6 +35,7 @@ router.get('/mail/list', authMiddleware, async (req, res) => {
       .sort({ created_at: -1 })
       .limit(limit)
       .populate('attachments.item', 'number name image')
+      .populate('spirits.spirit', 'number name image types')
       .lean();
     const mails = list.map((m) => ({
       id: m._id.toString(),
@@ -43,7 +44,7 @@ router.get('/mail/list', authMiddleware, async (req, res) => {
       isRead: !!m.isRead,
       created_at: (m.created_at || new Date()).toISOString(),
       read_at: m.read_at ? m.read_at.toISOString() : null,
-      attachments: (m.attachments || []).map((a) => ({
+      attachments: (m.attachments || []).slice(0, 5).map((a) => ({
         id: a._id?.toString(),
         itemId: a.item?._id?.toString() || null,
         itemNumber: a.item?.number || 0,
@@ -52,6 +53,16 @@ router.get('/mail/list', authMiddleware, async (req, res) => {
         quantity: a.quantity || 0,
         claimed: !!a.claimed,
       })),
+      spirits: (m.spirits || []).slice(0, 5).map((s) => ({
+        id: s._id?.toString(),
+        spiritId: s.spirit?._id?.toString() || null,
+        spiritNumber: s.spirit?.number || 0,
+        spiritName: s.spirit?.name || '',
+        spiritImage: s.spirit?.image || '',
+        claimed: !!s.claimed,
+      })),
+      gold: Math.max(0, Number(m.gold) || 0),
+      goldClaimed: !!m.goldClaimed,
     }));
     res.json({ ok: true, mails });
   } catch (err) {
@@ -79,7 +90,7 @@ router.post('/mail/:id/read', authMiddleware, async (req, res) => {
   }
 });
 
-// 领取附件：将未领取的附件发放到角色背包
+// 领取附件：道具入背包、金币加角色、妖灵槽标记已领（妖灵发放需后续 PlayerSpirit）
 // POST /api/mail/:id/claim
 router.post('/mail/:id/claim', authMiddleware, async (req, res) => {
   try {
@@ -95,13 +106,19 @@ router.post('/mail/:id/claim', authMiddleware, async (req, res) => {
     if (!character) return res.status(403).json({ error: '无权领取该角色的附件' });
 
     const attachments = mail.attachments || [];
-    const pending = attachments.filter((a) => !a.claimed && a.item && a.quantity > 0);
-    if (pending.length === 0) {
+    const pendingItems = attachments.filter((a) => !a.claimed && a.item && a.quantity > 0);
+    const goldToClaim = (mail.gold > 0 && !mail.goldClaimed) ? Math.max(0, Math.floor(Number(mail.gold) || 0)) : 0;
+    const spirits = mail.spirits || [];
+    const hasSpiritsToClaim = spirits.some((s) => s.spirit && !s.claimed);
+
+    const nothingToClaim = pendingItems.length === 0 && goldToClaim === 0 && !hasSpiritsToClaim;
+    if (nothingToClaim) {
       return res.json({ ok: true, message: '没有可领取的附件', alreadyClaimed: true });
     }
 
-    const results = [];
-    for (const att of pending) {
+    const results = { items: [], gold: 0, spirits: 0 };
+
+    for (const att of pendingItems) {
       const itemId = att.item._id;
       let pi = await PlayerItem.findOne({ character: characterId, item: itemId });
       if (!pi) {
@@ -116,7 +133,23 @@ router.post('/mail/:id/claim', authMiddleware, async (req, res) => {
       }
       att.claimed = true;
       att.claimed_at = new Date();
-      results.push({ itemId: itemId.toString(), quantity: att.quantity });
+      results.items.push({ itemId: itemId.toString(), quantity: att.quantity });
+    }
+
+    if (goldToClaim > 0) {
+      character.gold = (character.gold || 0) + goldToClaim;
+      await character.save();
+      mail.goldClaimed = true;
+      mail.goldClaimedAt = new Date();
+      results.gold = goldToClaim;
+    }
+
+    for (const s of spirits) {
+      if (s.spirit && !s.claimed) {
+        s.claimed = true;
+        s.claimed_at = new Date();
+        results.spirits += 1;
+      }
     }
 
     mail.isRead = true;

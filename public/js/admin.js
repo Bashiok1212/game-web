@@ -917,12 +917,11 @@ async function loadPlayerSpirits() {
 function openPlayerSpiritModal() {
   if (!playerSpiritModal || !formPlayerSpirit) return;
   formPlayerSpirit.reset();
-  formPlayerSpirit.id.value = '';
-  formPlayerSpirit.characterId.value = '';
-  formPlayerSpirit.spiritNumber.value = '';
-  formPlayerSpirit.level.value = '1';
-  formPlayerSpirit.nickname.value = '';
-  formPlayerSpirit.origin.value = '';
+  if (formPlayerSpirit.characterId) formPlayerSpirit.characterId.value = '';
+  if (formPlayerSpirit.spiritNumber) formPlayerSpirit.spiritNumber.value = '';
+  if (formPlayerSpirit.level) formPlayerSpirit.level.value = '1';
+  if (formPlayerSpirit.nickname) formPlayerSpirit.nickname.value = '';
+  if (formPlayerSpirit.origin) formPlayerSpirit.origin.value = '';
   playerSpiritModal.classList.remove('hidden');
 }
 

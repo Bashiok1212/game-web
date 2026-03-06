@@ -898,6 +898,7 @@ const formPlayerSpirit = $('#formPlayerSpirit');
 
 $('#btnPlayerSpiritSearch')?.addEventListener('click', () => loadPlayerSpirits());
 $('#btnAddPlayerSpirit')?.addEventListener('click', () => openPlayerSpiritModal());
+$('#btnGrantToOw')?.addEventListener('click', () => openPlayerSpiritModalForOw());
 $('#btnCancelPlayerSpirit')?.addEventListener('click', () => closePlayerSpiritModal());
 playerSpiritModal?.addEventListener('click', (e) => { if (e.target === playerSpiritModal) closePlayerSpiritModal(); });
 
@@ -915,7 +916,7 @@ async function loadPlayerSpirits() {
     const { playerSpirits } = await res.json();
     if (!playerSpiritsTableBody) return;
     if (!playerSpirits || playerSpirits.length === 0) {
-      playerSpiritsTableBody.innerHTML = '<tr><td colspan="9" class="empty">暂无玩家妖灵</td></tr>';
+      playerSpiritsTableBody.innerHTML = '<tr><td colspan="10" class="empty">暂无玩家妖灵</td></tr>';
       return;
     }
     playerSpiritsTableBody.innerHTML = playerSpirits.map((p) => `
@@ -929,8 +930,15 @@ async function loadPlayerSpirits() {
         <td>${p.currentHp ?? '-'} </td>
         <td>${p.isShiny ? '★' : ''}</td>
         <td>${p.capturedAt ? new Date(p.capturedAt).toLocaleString() : ''}</td>
+        <td><button type="button" class="btn btn-ghost btn-sm btn-detail" data-id="${escapeHtml(p.id)}">详情</button></td>
       </tr>
     `).join('');
+    playerSpiritsTableBody.querySelectorAll('.btn-detail').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        if (id) openPlayerSpiritDetail(id);
+      });
+    });
   } catch (err) {
     console.error(err);
   }
@@ -939,6 +947,23 @@ async function loadPlayerSpirits() {
 function openPlayerSpiritModal() {
   if (!playerSpiritModal || !formPlayerSpirit) return;
   formPlayerSpirit.reset();
+  const usernameEl = formPlayerSpirit.querySelector('[name="username"]');
+  if (usernameEl) usernameEl.value = 'ow';
+  const levelEl = formPlayerSpirit.querySelector('[name="level"]');
+  if (levelEl) levelEl.value = '1';
+  playerSpiritModal.classList.remove('hidden');
+  if (typeof playerSpiritModal.showModal === 'function') {
+    playerSpiritModal.showModal();
+  }
+}
+
+function openPlayerSpiritModalForOw() {
+  if (!playerSpiritModal || !formPlayerSpirit) return;
+  formPlayerSpirit.reset();
+  const usernameEl = formPlayerSpirit.querySelector('[name="username"]');
+  if (usernameEl) usernameEl.value = 'ow';
+  const spiritNumberEl = formPlayerSpirit.querySelector('[name="spiritNumber"]');
+  if (spiritNumberEl) spiritNumberEl.value = '1';
   const levelEl = formPlayerSpirit.querySelector('[name="level"]');
   if (levelEl) levelEl.value = '1';
   playerSpiritModal.classList.remove('hidden');
@@ -959,15 +984,17 @@ function closePlayerSpiritModal() {
 formPlayerSpirit?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const form = e.target;
+  const username = form.querySelector('[name="username"]')?.value?.trim();
+  const spiritNumber = form.querySelector('[name="spiritNumber"]')?.value?.trim();
   const payload = {
-    characterId: form.characterId?.value?.trim(),
-    spiritNumber: form.spiritNumber?.value?.trim(),
-    level: form.level?.value?.trim(),
-    nickname: form.nickname?.value?.trim(),
-    origin: form.origin?.value?.trim(),
+    username: username || undefined,
+    spiritNumber: spiritNumber || undefined,
+    level: form.querySelector('[name="level"]')?.value?.trim(),
+    nickname: form.querySelector('[name="nickname"]')?.value?.trim(),
+    origin: form.querySelector('[name="origin"]')?.value?.trim(),
   };
-  if (!payload.characterId || !payload.spiritNumber) {
-    alert('角色ID和妖灵编号为必填');
+  if (!payload.username || !payload.spiritNumber) {
+    alert('发放给账号和妖灵编号为必填');
     return;
   }
   try {
@@ -984,6 +1011,128 @@ formPlayerSpirit?.addEventListener('submit', async (e) => {
     closePlayerSpiritModal();
     loadPlayerSpirits();
     alert('发放成功');
+  } catch (err) {
+    console.error(err);
+    alert('网络错误');
+  }
+});
+
+const playerSpiritDetailModal = $('#playerSpiritDetailModal');
+const formPlayerSpiritDetail = $('#formPlayerSpiritDetail');
+const playerSpiritDetailOwner = $('#playerSpiritDetailOwner');
+const playerSpiritDetailBase = $('#playerSpiritDetailBase');
+const playerSpiritDetailStats = $('#playerSpiritDetailStats');
+const playerSpiritDetailMoves = $('#playerSpiritDetailMoves');
+
+function fillPlayerSpiritDetailView(data) {
+  if (playerSpiritDetailOwner) {
+    const ownerParts = [];
+    if (data.username) ownerParts.push(`账号：${data.username} (${data.userId || '-'})`);
+    if (data.characterName) ownerParts.push(`角色：${data.characterName}${data.characterSlot != null ? ` (槽位 ${data.characterSlot})` : ''} [${data.characterId || '-'}]`);
+    playerSpiritDetailOwner.textContent = ownerParts.join(' / ') || '—';
+  }
+  if (playerSpiritDetailBase) {
+    const types = (data.spiritTypes || []).join(' / ');
+    playerSpiritDetailBase.textContent = `#${String(data.spiritNumber || 0).padStart(3, '0')} ${data.spiritName || ''}${types ? `（${types}）` : ''}`;
+  }
+  if (playerSpiritDetailStats) {
+    const iv = `IV HP/Atk/Def/SpA/SpD/Spe = ${data.ivHp}/${data.ivAtk}/${data.ivDef}/${data.ivSpAtk}/${data.ivSpDef}/${data.ivSpeed}`;
+    const ev = `EV HP/Atk/Def/SpA/SpD/Spe = ${data.evHp}/${data.evAtk}/${data.evDef}/${data.evSpAtk}/${data.evSpDef}/${data.evSpeed}`;
+    playerSpiritDetailStats.textContent = `${iv}；${ev}`;
+  }
+  if (playerSpiritDetailMoves) {
+    const moves = Array.isArray(data.moves) && data.moves.length > 0
+      ? data.moves.map((m, idx) => `#${idx + 1} ${m.skillName || '(未设置)'} [${m.pp ?? 0}/${m.maxPp ?? 0}]`).join('；')
+      : '暂无技能';
+    playerSpiritDetailMoves.textContent = moves;
+  }
+  if (formPlayerSpiritDetail) {
+    const setVal = (name, v) => {
+      const el = formPlayerSpiritDetail.querySelector(`[name="${name}"]`);
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!v;
+      else el.value = v == null ? '' : String(v);
+    };
+    setVal('id', data.id);
+    setVal('level', data.level ?? 1);
+    setVal('exp', data.exp ?? 0);
+    setVal('nature', data.nature || 'Hardy');
+    setVal('nickname', data.nickname || '');
+    setVal('origin', data.origin || '');
+    setVal('currentHp', data.currentHp ?? 1);
+    setVal('status', data.status || 'none');
+    setVal('isShiny', data.isShiny);
+    setVal('friendship', data.friendship ?? 0);
+  }
+}
+
+async function openPlayerSpiritDetail(id) {
+  if (!id) return;
+  try {
+    const res = await apiFetch('/admin/player-spirits/' + id, {});
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      alert(json.error || '获取玩家妖灵详情失败');
+      return;
+    }
+    const data = await res.json();
+    fillPlayerSpiritDetailView(data);
+    if (playerSpiritDetailModal) playerSpiritDetailModal.classList.remove('hidden');
+  } catch (err) {
+    console.error(err);
+    alert('网络错误');
+  }
+}
+
+function closePlayerSpiritDetail() {
+  if (playerSpiritDetailModal) playerSpiritDetailModal.classList.add('hidden');
+}
+
+$('#btnClosePlayerSpiritDetail')?.addEventListener('click', () => closePlayerSpiritDetail());
+$('#btnCancelPlayerSpiritDetail')?.addEventListener('click', () => closePlayerSpiritDetail());
+playerSpiritDetailModal?.addEventListener('click', (e) => { if (e.target === playerSpiritDetailModal) closePlayerSpiritDetail(); });
+
+formPlayerSpiritDetail?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const id = form.querySelector('[name="id"]')?.value;
+  if (!id) {
+    alert('缺少玩家妖灵ID');
+    return;
+  }
+  const num = (name) => {
+    const v = form.querySelector(`[name="${name}"]`)?.value;
+    return v === '' || v == null ? undefined : Number(v);
+  };
+  const txt = (name) => {
+    const v = form.querySelector(`[name="${name}"]`)?.value;
+    return v == null ? undefined : v.trim();
+  };
+  const payload = {
+    level: num('level'),
+    exp: num('exp'),
+    nature: txt('nature'),
+    nickname: txt('nickname'),
+    origin: txt('origin'),
+    currentHp: num('currentHp'),
+    status: txt('status'),
+    friendship: num('friendship'),
+    isShiny: form.querySelector('[name="isShiny"]')?.checked,
+  };
+  try {
+    const res = await apiFetch('/admin/player-spirits/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.ok === false) {
+      alert(json.error || '保存失败');
+      return;
+    }
+    alert('保存成功');
+    closePlayerSpiritDetail();
+    loadPlayerSpirits();
   } catch (err) {
     console.error(err);
     alert('网络错误');

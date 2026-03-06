@@ -980,12 +980,23 @@ router.get('/player-spirits', authMiddleware, adminMiddleware, async (req, res) 
 
 router.post('/player-spirits', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { characterId, spiritNumber, level, nickname, origin } = req.body || {};
-    if (!characterId) return res.status(400).json({ error: '角色为必填' });
+    const { characterId, username, spiritNumber, level, nickname, origin } = req.body || {};
     if (!spiritNumber) return res.status(400).json({ error: '妖灵编号为必填' });
 
-    const character = await Character.findById(characterId).populate('user', 'username').lean();
-    if (!character) return res.status(404).json({ error: '角色不存在' });
+    let character;
+    if (characterId) {
+      character = await Character.findById(characterId).populate('user', 'username').lean();
+      if (!character) return res.status(404).json({ error: '角色不存在' });
+    } else if (username) {
+      const uname = String(username).trim();
+      if (!uname) return res.status(400).json({ error: '请填写账号名或角色ID' });
+      const user = await User.findOne({ username: uname }).select('_id').lean();
+      if (!user) return res.status(404).json({ error: '账号不存在' });
+      character = await Character.findOne({ user: user._id }).sort({ slot: 1 }).populate('user', 'username').lean();
+      if (!character) return res.status(404).json({ error: '该账号下暂无角色' });
+    } else {
+      return res.status(400).json({ error: '请填写账号名（如 ow）或角色ID' });
+    }
 
     const num = Number(spiritNumber) || 0;
     if (num < 1) return res.status(400).json({ error: '妖灵编号须为正整数' });

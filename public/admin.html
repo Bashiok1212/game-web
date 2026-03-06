@@ -418,6 +418,7 @@
             <button type="button" id="btnPlayerSpiritSearch" class="btn btn-primary">筛选</button>
           </div>
           <button type="button" id="btnAddPlayerSpirit" class="btn btn-primary">+ 发放妖灵</button>
+          <button type="button" id="btnGrantToOw" class="btn btn-primary">发放给 ow</button>
         </div>
         <div class="spirits-table-wrap">
           <table class="spirits-table">
@@ -432,6 +433,7 @@
                 <th>当前HP</th>
                 <th>异色</th>
                 <th>获取时间</th>
+                <th>操作</th>
               </tr>
             </thead>
             <tbody id="playerSpiritsTableBody"></tbody>
@@ -445,8 +447,8 @@
             <form id="formPlayerSpirit">
               <input type="hidden" name="id" id="playerSpiritId">
               <div class="form-row">
-                <label class="form-label">角色ID<span class="required">*</span></label>
-                <input type="text" name="characterId" id="playerSpiritCharacterInput" placeholder="目标角色ID" required>
+                <label class="form-label">发放给账号<span class="required">*</span></label>
+                <input type="text" name="username" id="playerSpiritUsernameInput" placeholder="例如 ow" value="ow">
               </div>
               <div class="form-row">
                 <label class="form-label">妖灵编号<span class="required">*</span></label>
@@ -471,6 +473,61 @@
             </form>
           </div>
         </dialog>
+
+        <!-- 玩家妖灵详情弹层 -->
+        <div id="playerSpiritDetailModal" class="spirit-modal hidden">
+          <div class="spirit-modal-content">
+            <button type="button" class="spirit-modal-close" id="btnClosePlayerSpiritDetail" aria-label="关闭">&times;</button>
+            <h3 id="playerSpiritDetailTitle">玩家妖灵详情</h3>
+            <form id="formPlayerSpiritDetail">
+              <input type="hidden" name="id">
+              <div class="form-row">
+                <label>账号 / 角色</label>
+                <div id="playerSpiritDetailOwner" class="admin-hint"></div>
+              </div>
+              <div class="form-row">
+                <label>图鉴妖灵</label>
+                <div id="playerSpiritDetailBase" class="admin-hint"></div>
+              </div>
+              <div class="form-row">
+                <label>等级 / 经验 / 性格</label>
+                <div class="stats-grid">
+                  <div><label>等级</label><input type="number" name="level" min="1" max="100" value="1"></div>
+                  <div><label>经验</label><input type="number" name="exp" min="0" value="0"></div>
+                  <div><label>性格</label><input type="text" name="nature" maxlength="16" placeholder="Hardy"></div>
+                </div>
+              </div>
+              <div class="form-row">
+                <label>昵称 / 来源</label>
+                <div class="stats-grid">
+                  <div><label>昵称</label><input type="text" name="nickname" maxlength="32"></div>
+                  <div><label>来源说明</label><input type="text" name="origin" maxlength="64"></div>
+                </div>
+              </div>
+              <div class="form-row">
+                <label>当前HP / 状态 / 异色 / 亲密度</label>
+                <div class="stats-grid">
+                  <div><label>当前HP</label><input type="number" name="currentHp" min="0" value="1"></div>
+                  <div><label>状态</label><input type="text" name="status" maxlength="16" placeholder="none"></div>
+                  <div><label>异色</label><input type="checkbox" name="isShiny"></div>
+                  <div><label>亲密度</label><input type="number" name="friendship" min="0" max="255" value="0"></div>
+                </div>
+              </div>
+              <div class="form-row">
+                <label>个体值 / 努力值概览</label>
+                <div id="playerSpiritDetailStats" class="admin-hint"></div>
+              </div>
+              <div class="form-row">
+                <label>技能</label>
+                <div id="playerSpiritDetailMoves" class="admin-hint"></div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-ghost" id="btnCancelPlayerSpiritDetail">关闭</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </section>
 
       <!-- 妖灵编辑弹层 -->

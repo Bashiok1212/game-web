@@ -21,6 +21,12 @@
 
 .admin-dashboard { padding: 2rem; }
 
+.admin-hint {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
 .admin-stats {
   display: flex;
   gap: 1.5rem;
@@ -229,6 +235,7 @@
 .spirit-modal {
   position: fixed;
   inset: 0;
+  z-index: 1000;
   background: rgba(0,0,0,0.5);
   display: flex;
   align-items: center;

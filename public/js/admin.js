@@ -55,6 +55,7 @@ formAdminLogin?.addEventListener('submit', async (e) => {
     if (['admin', 'ow'].includes(json.user?.role)) {
       loadDashboard();
       showSection(dashboardSection);
+      loadSpirits();
     } else {
       setToken(null);
       setUser(null);
@@ -457,25 +458,36 @@ $('#spiritSearch')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') 
 $('#spiritTypeFilter')?.addEventListener('change', () => loadSpirits());
 $('#spiritSort')?.addEventListener('change', () => loadSpirits());
 
+function getSpiritFormPayload(form) {
+  const get = (name) => (form.querySelector('[name="' + name + '"]')?.value ?? '').trim();
+  const num = (name) => parseInt(form.querySelector('[name="' + name + '"]')?.value, 10);
+  return {
+    number: num('number') || 1,
+    name: get('name'),
+    types: [get('type1'), get('type2')].filter(Boolean),
+    stats: {
+      hp: num('hp') || 50,
+      attack: num('attack') || 50,
+      defense: num('defense') || 50,
+      sp_attack: num('sp_attack') || 50,
+      sp_defense: num('sp_defense') || 50,
+      speed: num('speed') || 50,
+    },
+    description: get('description') || '',
+    image: get('image') || '',
+  };
+}
+
 formSpirit?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const form = e.target;
-  const id = form.spiritId?.value;
-  const payload = {
-    number: parseInt(form.number?.value, 10),
-    name: form.name?.value?.trim(),
-    types: [form.type1?.value, form.type2?.value].filter(Boolean),
-    stats: {
-      hp: parseInt(form.hp?.value, 10) || 50,
-      attack: parseInt(form.attack?.value, 10) || 50,
-      defense: parseInt(form.defense?.value, 10) || 50,
-      sp_attack: parseInt(form.sp_attack?.value, 10) || 50,
-      sp_defense: parseInt(form.sp_defense?.value, 10) || 50,
-      speed: parseInt(form.speed?.value, 10) || 50,
-    },
-    description: form.description?.value?.trim() || '',
-    image: form.image?.value?.trim() || '',
-  };
+  const idEl = form.querySelector('[name="spiritId"]');
+  const id = (idEl && idEl.value) || '';
+  const payload = getSpiritFormPayload(form);
+  if (!payload.name) {
+    alert('请填写妖灵名称');
+    return;
+  }
   try {
     if (id) {
       const res = await apiFetch('/admin/spirits/' + id, {
@@ -483,22 +495,25 @@ formSpirit?.addEventListener('submit', async (e) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) { alert(json.error || '更新失败'); return; }
       closeSpiritModal();
       loadSpirits();
+      alert('保存成功');
     } else {
       const res = await apiFetch('/admin/spirits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) { alert(json.error || '添加失败'); return; }
       closeSpiritModal();
       loadSpirits();
+      alert('创建成功');
     }
   } catch (err) {
+    console.error(err);
     alert('网络错误');
   }
 });
@@ -557,44 +572,51 @@ async function loadSpirits() {
   }
 }
 
+function setSpiritFormField(form, name, value) {
+  const el = form.querySelector('[name="' + name + '"]');
+  if (el) el.value = value == null ? '' : value;
+}
+
 function openSpiritModal(id) {
   if (id) {
-    $('#spiritModalTitle').textContent = '编辑妖灵';
-    formSpirit.spiritId.value = id;
+    const titleEl = $('#spiritModalTitle');
+    if (titleEl) titleEl.textContent = '编辑妖灵';
+    setSpiritFormField(formSpirit, 'spiritId', id);
     apiFetch('/admin/spirits/' + id, {}).then(async (res) => {
       if (!res.ok) return;
       const s = await res.json();
-      formSpirit.number.value = s.number;
-      formSpirit.name.value = s.name || '';
-      formSpirit.type1.value = (s.types || [])[0] || '';
-      formSpirit.type2.value = (s.types || [])[1] || '';
       const st = s.stats || {};
-      formSpirit.hp.value = st.hp ?? 50;
-      formSpirit.attack.value = st.attack ?? 50;
-      formSpirit.defense.value = st.defense ?? 50;
-      formSpirit.sp_attack.value = st.sp_attack ?? 50;
-      formSpirit.sp_defense.value = st.sp_defense ?? 50;
-      formSpirit.speed.value = st.speed ?? 50;
-      formSpirit.description.value = s.description || '';
-      formSpirit.image.value = s.image || '';
+      setSpiritFormField(formSpirit, 'number', s.number);
+      setSpiritFormField(formSpirit, 'name', s.name || '');
+      setSpiritFormField(formSpirit, 'type1', (s.types || [])[0] || '');
+      setSpiritFormField(formSpirit, 'type2', (s.types || [])[1] || '');
+      setSpiritFormField(formSpirit, 'hp', st.hp ?? 50);
+      setSpiritFormField(formSpirit, 'attack', st.attack ?? 50);
+      setSpiritFormField(formSpirit, 'defense', st.defense ?? 50);
+      setSpiritFormField(formSpirit, 'sp_attack', st.sp_attack ?? 50);
+      setSpiritFormField(formSpirit, 'sp_defense', st.sp_defense ?? 50);
+      setSpiritFormField(formSpirit, 'speed', st.speed ?? 50);
+      setSpiritFormField(formSpirit, 'description', s.description || '');
+      setSpiritFormField(formSpirit, 'image', s.image || '');
       spiritModal.classList.remove('hidden');
     });
   } else {
-    $('#spiritModalTitle').textContent = '添加妖灵';
+    const titleEl = $('#spiritModalTitle');
+    if (titleEl) titleEl.textContent = '添加妖灵';
     formSpirit.reset();
-    formSpirit.spiritId.value = '';
-    formSpirit.number.value = '';
-    formSpirit.name.value = '';
-    formSpirit.type1.value = '';
-    formSpirit.type2.value = '';
-    formSpirit.hp.value = 50;
-    formSpirit.attack.value = 50;
-    formSpirit.defense.value = 50;
-    formSpirit.sp_attack.value = 50;
-    formSpirit.sp_defense.value = 50;
-    formSpirit.speed.value = 50;
-    formSpirit.description.value = '';
-    formSpirit.image.value = '';
+    setSpiritFormField(formSpirit, 'spiritId', '');
+    setSpiritFormField(formSpirit, 'number', '');
+    setSpiritFormField(formSpirit, 'name', '');
+    setSpiritFormField(formSpirit, 'type1', '');
+    setSpiritFormField(formSpirit, 'type2', '');
+    setSpiritFormField(formSpirit, 'hp', 50);
+    setSpiritFormField(formSpirit, 'attack', 50);
+    setSpiritFormField(formSpirit, 'defense', 50);
+    setSpiritFormField(formSpirit, 'sp_attack', 50);
+    setSpiritFormField(formSpirit, 'sp_defense', 50);
+    setSpiritFormField(formSpirit, 'speed', 50);
+    setSpiritFormField(formSpirit, 'description', '');
+    setSpiritFormField(formSpirit, 'image', '');
     spiritModal.classList.remove('hidden');
   }
 }

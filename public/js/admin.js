@@ -917,17 +917,21 @@ async function loadPlayerSpirits() {
 function openPlayerSpiritModal() {
   if (!playerSpiritModal || !formPlayerSpirit) return;
   formPlayerSpirit.reset();
-  if (formPlayerSpirit.characterId) formPlayerSpirit.characterId.value = '';
-  if (formPlayerSpirit.spiritNumber) formPlayerSpirit.spiritNumber.value = '';
-  if (formPlayerSpirit.level) formPlayerSpirit.level.value = '1';
-  if (formPlayerSpirit.nickname) formPlayerSpirit.nickname.value = '';
-  if (formPlayerSpirit.origin) formPlayerSpirit.origin.value = '';
+  const levelEl = formPlayerSpirit.querySelector('[name="level"]');
+  if (levelEl) levelEl.value = '1';
   playerSpiritModal.classList.remove('hidden');
+  if (typeof playerSpiritModal.showModal === 'function') {
+    playerSpiritModal.showModal();
+  }
 }
 
 function closePlayerSpiritModal() {
   if (!playerSpiritModal) return;
-  playerSpiritModal.classList.add('hidden');
+  if (typeof playerSpiritModal.close === 'function') {
+    playerSpiritModal.close();
+  } else {
+    playerSpiritModal.classList.add('hidden');
+  }
 }
 
 formPlayerSpirit?.addEventListener('submit', async (e) => {
@@ -957,6 +961,7 @@ formPlayerSpirit?.addEventListener('submit', async (e) => {
     }
     closePlayerSpiritModal();
     loadPlayerSpirits();
+    alert('发放成功');
   } catch (err) {
     console.error(err);
     alert('网络错误');

@@ -988,8 +988,26 @@ router.post('/player-spirits', authMiddleware, adminMiddleware, async (req, res)
     if (!character) return res.status(404).json({ error: '角色不存在' });
 
     const num = Number(spiritNumber) || 0;
-    const spirit = await Spirit.findOne({ number: num }).lean();
-    if (!spirit) return res.status(404).json({ error: '妖灵编号不存在' });
+    if (num < 1) return res.status(400).json({ error: '妖灵编号须为正整数' });
+    let spirit = await Spirit.findOne({ number: num }).lean();
+    if (!spirit) {
+      const newSpirit = await Spirit.create({
+        number: num,
+        name: `妖灵#${num}`,
+        types: [],
+        stats: normalizeStats({}),
+        description: '',
+        image: '',
+      });
+      await logAdminAction(
+        req.user.id,
+        (await User.findById(req.user.id).select('username'))?.username,
+        'spirit',
+        `发放时自动创建图鉴妖灵 #${num} 妖灵#${num}`,
+        newSpirit._id.toString(),
+      );
+      spirit = { _id: newSpirit._id, number: newSpirit.number, name: newSpirit.name };
+    }
 
     const lvl = Math.max(1, Math.min(100, Number(level) || 1));
     const randIv = () => Math.floor(Math.random() * 32); // 0~31

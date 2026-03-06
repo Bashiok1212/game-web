@@ -1070,7 +1070,16 @@ function fillPlayerSpiritDetailView(data) {
     setVal('id', data.id);
     setVal('level', data.level ?? 1);
     setVal('exp', data.exp ?? 0);
-    setVal('nature', data.nature || 'Hardy');
+    const natureVal = (data.nature || 'Hardy').trim();
+    setVal('nature', natureVal);
+    const natureSel = formPlayerSpiritDetail.querySelector('[name="nature"]');
+    if (natureSel && natureSel.value !== natureVal) {
+      const opt = document.createElement('option');
+      opt.value = natureVal;
+      opt.textContent = natureVal;
+      natureSel.appendChild(opt);
+      natureSel.value = natureVal;
+    }
     setVal('nickname', data.nickname || '');
     setVal('origin', data.origin || '');
     setVal('currentHp', data.currentHp ?? 1);

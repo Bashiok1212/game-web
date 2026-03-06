@@ -8,6 +8,7 @@ const Character = require('../models/Character');
 const Festival = require('../models/Festival');
 const Mail = require('../models/Mail');
 const AdminLog = require('../models/AdminLog');
+const wsHub = require('../wsHub');
 const { authMiddleware } = require('../middleware/auth');
 const { adminMiddleware } = require('../middleware/admin');
 
@@ -247,7 +248,14 @@ router.post('/mail/send', authMiddleware, adminMiddleware, async (req, res) => {
       gold,
       goldClaimed: false,
     }));
-    await Mail.insertMany(docs);
+    const inserted = await Mail.insertMany(docs);
+
+    // WS 即时通知：目标角色收到新邮件后，客户端可立即刷新列表
+    try {
+      for (const ch of characters) {
+        wsHub.notifyMailNew(ch._id.toString(), null);
+      }
+    } catch (_) {}
 
     const op = await User.findById(req.user.id).select('username');
     await logAdminAction(req.user.id, op?.username, 'mail', `发送邮件「${t}」给 ${targetDesc} 的 ${characters.length} 个角色`, '');

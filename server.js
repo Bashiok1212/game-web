@@ -13,6 +13,7 @@ const http = require('http');
 const WebSocket = require('ws');
 
 require('./config/db');
+const wsHub = require('./wsHub');
 const authRoutes = require('./routes/auth');
 const chatRoutes = require('./routes/chat');
 const mailRoutes = require('./routes/mail');
@@ -157,22 +158,6 @@ function verifyWsToken(token) {
 
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: '/ws' });
-const wsClients = new Set();
-
-function wsSendJson(ws, obj) {
-  try {
-    ws.send(JSON.stringify(obj));
-  } catch (_) {}
-}
-
-function broadcastJson(obj) {
-  const data = JSON.stringify(obj);
-  for (const client of wsClients) {
-    if (client.readyState === WebSocket.OPEN) {
-      try { client.send(data); } catch (_) {}
-    }
-  }
-}
 
 wss.on('connection', (ws, req) => {
   const url = new URL(req.url, 'http://localhost');
@@ -183,8 +168,25 @@ wss.on('connection', (ws, req) => {
     return;
   }
   ws.user = decoded;
-  wsClients.add(ws);
-  wsSendJson(ws, { type: 'hello', user: { id: decoded.id, username: decoded.username } });
+  ws.subscribedCharacters = new Set();
+  wsHub.addClient(ws);
+  wsHub.sendJson(ws, { type: 'hello', user: { id: decoded.id, username: decoded.username } });
+
+  // 可选：URL 里直接带 characterId，则自动订阅该角色邮件推送
+  const initialCharacterId = url.searchParams.get('characterId') || '';
+  if (initialCharacterId) {
+    try {
+      Character.findOne({ _id: initialCharacterId, user: decoded.id }, { _id: 1 })
+        .lean()
+        .then((ch) => {
+          if (ch && ws.subscribedCharacters) {
+            ws.subscribedCharacters.add(String(initialCharacterId));
+            wsHub.sendJson(ws, { type: 'mail_subscribed', characterId: String(initialCharacterId) });
+          }
+        })
+        .catch(() => {});
+    } catch (_) {}
+  }
 
   ws.on('message', async (buf) => {
     let payload;
@@ -197,7 +199,20 @@ wss.on('connection', (ws, req) => {
     const type = payload.type || '';
 
     if (type === 'ping') {
-      wsSendJson(ws, { type: 'pong', t: Date.now() });
+      wsHub.sendJson(ws, { type: 'pong', t: Date.now() });
+      return;
+    }
+
+    if (type === 'mail_subscribe') {
+      const characterId = typeof payload.characterId === 'string' ? payload.characterId.trim() : '';
+      if (!characterId) return;
+      const ch = await Character.findOne({ _id: characterId, user: ws.user.id }, { _id: 1 }).lean();
+      if (!ch) {
+        wsHub.sendJson(ws, { type: 'error', error: 'mail_subscribe_denied' });
+        return;
+      }
+      if (ws.subscribedCharacters) ws.subscribedCharacters.add(String(characterId));
+      wsHub.sendJson(ws, { type: 'mail_subscribed', characterId: String(characterId) });
       return;
     }
 
@@ -221,11 +236,11 @@ wss.on('connection', (ws, req) => {
           content,
         });
       } catch (err) {
-        wsSendJson(ws, { type: 'error', error: 'chat_save_failed' });
+        wsHub.sendJson(ws, { type: 'error', error: 'chat_save_failed' });
         return;
       }
 
-      broadcastJson({
+      wsHub.broadcastJson({
         type: 'chat_message',
         message: {
           id: msg._id.toString(),
@@ -240,10 +255,10 @@ wss.on('connection', (ws, req) => {
   });
 
   ws.on('close', () => {
-    wsClients.delete(ws);
+    wsHub.removeClient(ws);
   });
   ws.on('error', () => {
-    wsClients.delete(ws);
+    wsHub.removeClient(ws);
   });
 });
 

@@ -1021,8 +1021,33 @@ const playerSpiritDetailModal = $('#playerSpiritDetailModal');
 const formPlayerSpiritDetail = $('#formPlayerSpiritDetail');
 const playerSpiritDetailOwner = $('#playerSpiritDetailOwner');
 const playerSpiritDetailBase = $('#playerSpiritDetailBase');
-const playerSpiritDetailStats = $('#playerSpiritDetailStats');
-const playerSpiritDetailMoves = $('#playerSpiritDetailMoves');
+const playerSpiritDetailEvSum = $('#playerSpiritDetailEvSum');
+
+let detailSkillsList = [];
+async function ensureDetailSkillsOptions() {
+  if (detailSkillsList.length > 0) return;
+  try {
+    const res = await apiFetch('/admin/skills?limit=500');
+    if (!res.ok) return;
+    const json = await res.json();
+    detailSkillsList = json.skills || [];
+  } catch (_) {}
+  [0, 1, 2, 3].forEach((i) => {
+    const sel = formPlayerSpiritDetail?.querySelector(`[name="move${i}_skill"]`);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">—</option>' + detailSkillsList.map((s) =>
+      `<option value="${escapeHtml(s.id)}">#${String(s.number || 0).padStart(3, '0')} ${escapeHtml(s.name || '')}</option>`
+    ).join('');
+  });
+}
+
+function updatePlayerSpiritDetailEvSum() {
+  if (!playerSpiritDetailEvSum || !formPlayerSpiritDetail) return;
+  const evKeys = ['evHp', 'evAtk', 'evDef', 'evSpAtk', 'evSpDef', 'evSpeed'];
+  const sum = evKeys.reduce((s, k) => s + (parseInt(formPlayerSpiritDetail.querySelector(`[name="${k}"]`)?.value, 10) || 0), 0);
+  playerSpiritDetailEvSum.textContent = `努力值总和：${sum}/510`;
+  playerSpiritDetailEvSum.style.color = sum > 510 ? 'var(--error, #c00)' : '';
+}
 
 function fillPlayerSpiritDetailView(data) {
   if (playerSpiritDetailOwner) {
@@ -1034,17 +1059,6 @@ function fillPlayerSpiritDetailView(data) {
   if (playerSpiritDetailBase) {
     const types = (data.spiritTypes || []).join(' / ');
     playerSpiritDetailBase.textContent = `#${String(data.spiritNumber || 0).padStart(3, '0')} ${data.spiritName || ''}${types ? `（${types}）` : ''}`;
-  }
-  if (playerSpiritDetailStats) {
-    const iv = `IV HP/Atk/Def/SpA/SpD/Spe = ${data.ivHp}/${data.ivAtk}/${data.ivDef}/${data.ivSpAtk}/${data.ivSpDef}/${data.ivSpeed}`;
-    const ev = `EV HP/Atk/Def/SpA/SpD/Spe = ${data.evHp}/${data.evAtk}/${data.evDef}/${data.evSpAtk}/${data.evSpDef}/${data.evSpeed}`;
-    playerSpiritDetailStats.textContent = `${iv}；${ev}`;
-  }
-  if (playerSpiritDetailMoves) {
-    const moves = Array.isArray(data.moves) && data.moves.length > 0
-      ? data.moves.map((m, idx) => `#${idx + 1} ${m.skillName || '(未设置)'} [${m.pp ?? 0}/${m.maxPp ?? 0}]`).join('；')
-      : '暂无技能';
-    playerSpiritDetailMoves.textContent = moves;
   }
   if (formPlayerSpiritDetail) {
     const setVal = (name, v) => {
@@ -1063,12 +1077,23 @@ function fillPlayerSpiritDetailView(data) {
     setVal('status', data.status || 'none');
     setVal('isShiny', data.isShiny);
     setVal('friendship', data.friendship ?? 0);
+    ['ivHp', 'ivAtk', 'ivDef', 'ivSpAtk', 'ivSpDef', 'ivSpeed'].forEach((k) => setVal(k, data[k] ?? 0));
+    ['evHp', 'evAtk', 'evDef', 'evSpAtk', 'evSpDef', 'evSpeed'].forEach((k) => setVal(k, data[k] ?? 0));
+    const moves = Array.isArray(data.moves) ? data.moves : [];
+    [0, 1, 2, 3].forEach((i) => {
+      const m = moves[i];
+      setVal(`move${i}_skill`, m?.skillId || '');
+      setVal(`move${i}_pp`, m?.pp ?? 0);
+      setVal(`move${i}_maxPp`, m?.maxPp ?? 0);
+    });
   }
+  updatePlayerSpiritDetailEvSum();
 }
 
 async function openPlayerSpiritDetail(id) {
   if (!id) return;
   try {
+    await ensureDetailSkillsOptions();
     const res = await apiFetch('/admin/player-spirits/' + id, {});
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
@@ -1078,6 +1103,10 @@ async function openPlayerSpiritDetail(id) {
     const data = await res.json();
     fillPlayerSpiritDetailView(data);
     if (playerSpiritDetailModal) playerSpiritDetailModal.classList.remove('hidden');
+    formPlayerSpiritDetail?.querySelectorAll('[name^="ev"]').forEach((el) => {
+      el.removeEventListener('input', updatePlayerSpiritDetailEvSum);
+      el.addEventListener('input', updatePlayerSpiritDetailEvSum);
+    });
   } catch (err) {
     console.error(err);
     alert('网络错误');
@@ -1108,6 +1137,22 @@ formPlayerSpiritDetail?.addEventListener('submit', async (e) => {
     const v = form.querySelector(`[name="${name}"]`)?.value;
     return v == null ? undefined : v.trim();
   };
+  const evKeys = ['evHp', 'evAtk', 'evDef', 'evSpAtk', 'evSpDef', 'evSpeed'];
+  const evSum = evKeys.reduce((s, k) => s + (num(k) || 0), 0);
+  if (evSum > 510) {
+    alert('努力值总和不能超过510');
+    return;
+  }
+  const moves = [];
+  [0, 1, 2, 3].forEach((i) => {
+    const skillId = form.querySelector(`[name="move${i}_skill"]`)?.value?.trim();
+    if (!skillId) return;
+    moves.push({
+      skillId,
+      pp: num(`move${i}_pp`) ?? 0,
+      maxPp: num(`move${i}_maxPp`) ?? 0,
+    });
+  });
   const payload = {
     level: num('level'),
     exp: num('exp'),
@@ -1118,6 +1163,19 @@ formPlayerSpiritDetail?.addEventListener('submit', async (e) => {
     status: txt('status'),
     friendship: num('friendship'),
     isShiny: form.querySelector('[name="isShiny"]')?.checked,
+    ivHp: num('ivHp'),
+    ivAtk: num('ivAtk'),
+    ivDef: num('ivDef'),
+    ivSpAtk: num('ivSpAtk'),
+    ivSpDef: num('ivSpDef'),
+    ivSpeed: num('ivSpeed'),
+    evHp: num('evHp'),
+    evAtk: num('evAtk'),
+    evDef: num('evDef'),
+    evSpAtk: num('evSpAtk'),
+    evSpDef: num('evSpDef'),
+    evSpeed: num('evSpeed'),
+    moves,
   };
   try {
     const res = await apiFetch('/admin/player-spirits/' + id, {

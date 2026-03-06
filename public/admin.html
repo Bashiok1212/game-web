@@ -514,12 +514,52 @@
                 </div>
               </div>
               <div class="form-row">
-                <label>个体值 / 努力值概览</label>
-                <div id="playerSpiritDetailStats" class="admin-hint"></div>
+                <label>个体值 IV（0～31）</label>
+                <div class="stats-grid">
+                  <div><label>HP</label><input type="number" name="ivHp" min="0" max="31" value="0"></div>
+                  <div><label>攻击</label><input type="number" name="ivAtk" min="0" max="31" value="0"></div>
+                  <div><label>防御</label><input type="number" name="ivDef" min="0" max="31" value="0"></div>
+                  <div><label>特攻</label><input type="number" name="ivSpAtk" min="0" max="31" value="0"></div>
+                  <div><label>特防</label><input type="number" name="ivSpDef" min="0" max="31" value="0"></div>
+                  <div><label>速度</label><input type="number" name="ivSpeed" min="0" max="31" value="0"></div>
+                </div>
               </div>
               <div class="form-row">
-                <label>技能</label>
-                <div id="playerSpiritDetailMoves" class="admin-hint"></div>
+                <label>努力值 EV（0～252，总和≤510）</label>
+                <div class="stats-grid">
+                  <div><label>HP</label><input type="number" name="evHp" min="0" max="252" value="0"></div>
+                  <div><label>攻击</label><input type="number" name="evAtk" min="0" max="252" value="0"></div>
+                  <div><label>防御</label><input type="number" name="evDef" min="0" max="252" value="0"></div>
+                  <div><label>特攻</label><input type="number" name="evSpAtk" min="0" max="252" value="0"></div>
+                  <div><label>特防</label><input type="number" name="evSpDef" min="0" max="252" value="0"></div>
+                  <div><label>速度</label><input type="number" name="evSpeed" min="0" max="252" value="0"></div>
+                </div>
+                <span id="playerSpiritDetailEvSum" class="admin-hint" style="display:block;margin-top:0.35rem"></span>
+              </div>
+              <div class="form-row">
+                <label>技能（最多4个）</label>
+                <div id="playerSpiritDetailMovesWrap">
+                  <div class="form-row" style="margin-bottom:0.5rem"><div class="stats-grid" style="grid-template-columns: 1fr 80px 80px">
+                    <div><label>技能</label><select name="move0_skill"><option value="">—</option></select></div>
+                    <div><label>PP</label><input type="number" name="move0_pp" min="0" max="99" value="0"></div>
+                    <div><label>最大PP</label><input type="number" name="move0_maxPp" min="0" max="99" value="0"></div>
+                  </div></div>
+                  <div class="form-row" style="margin-bottom:0.5rem"><div class="stats-grid" style="grid-template-columns: 1fr 80px 80px">
+                    <div><label>技能</label><select name="move1_skill"><option value="">—</option></select></div>
+                    <div><label>PP</label><input type="number" name="move1_pp" min="0" max="99" value="0"></div>
+                    <div><label>最大PP</label><input type="number" name="move1_maxPp" min="0" max="99" value="0"></div>
+                  </div></div>
+                  <div class="form-row" style="margin-bottom:0.5rem"><div class="stats-grid" style="grid-template-columns: 1fr 80px 80px">
+                    <div><label>技能</label><select name="move2_skill"><option value="">—</option></select></div>
+                    <div><label>PP</label><input type="number" name="move2_pp" min="0" max="99" value="0"></div>
+                    <div><label>最大PP</label><input type="number" name="move2_maxPp" min="0" max="99" value="0"></div>
+                  </div></div>
+                  <div class="form-row"><div class="stats-grid" style="grid-template-columns: 1fr 80px 80px">
+                    <div><label>技能</label><select name="move3_skill"><option value="">—</option></select></div>
+                    <div><label>PP</label><input type="number" name="move3_pp" min="0" max="99" value="0"></div>
+                    <div><label>最大PP</label><input type="number" name="move3_maxPp" min="0" max="99" value="0"></div>
+                  </div></div>
+                </div>
               </div>
               <div class="form-actions">
                 <button type="button" class="btn btn-ghost" id="btnCancelPlayerSpiritDetail">关闭</button>

@@ -160,6 +160,10 @@ function verifyWsToken(token) {
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: '/ws' });
 
+// WS 心跳：定期 ping，清理断线但未触发 close 的连接
+const WS_HEARTBEAT_INTERVAL_MS = parseInt(process.env.WS_HEARTBEAT_INTERVAL_MS || '30000', 10) || 30000;
+const WS_HEARTBEAT_TIMEOUT_MS = parseInt(process.env.WS_HEARTBEAT_TIMEOUT_MS || '90000', 10) || 90000;
+
 wss.on('connection', (ws, req) => {
   const url = new URL(req.url, 'http://localhost');
   const token = url.searchParams.get('token') || '';
@@ -170,8 +174,15 @@ wss.on('connection', (ws, req) => {
   }
   ws.user = decoded;
   ws.subscribedCharacters = new Set();
+  ws.isAlive = true;
+  ws.lastPongAt = Date.now();
   wsHub.addClient(ws);
   wsHub.sendJson(ws, { type: 'hello', user: { id: decoded.id, username: decoded.username } });
+
+  ws.on('pong', () => {
+    ws.isAlive = true;
+    ws.lastPongAt = Date.now();
+  });
 
   // 可选：URL 里直接带 characterId，则自动订阅该角色邮件推送
   const initialCharacterId = url.searchParams.get('characterId') || '';
@@ -267,6 +278,21 @@ wss.on('connection', (ws, req) => {
     wsHub.removeClient(ws);
   });
 });
+
+setInterval(() => {
+  const now = Date.now();
+  for (const ws of wss.clients) {
+    // 连接已关闭/正在关闭
+    if (ws.readyState !== WebSocket.OPEN) continue;
+    // 超时仍未 pong：直接终止，释放资源（客户端会自动重连）
+    if (ws.lastPongAt && now - ws.lastPongAt > WS_HEARTBEAT_TIMEOUT_MS) {
+      try { ws.terminate(); } catch (_) {}
+      continue;
+    }
+    // 发送 ping frame
+    try { ws.ping(); } catch (_) {}
+  }
+}, Math.max(5000, WS_HEARTBEAT_INTERVAL_MS));
 
 server.listen(PORT, () => {
   console.log(`服务器运行在 http://localhost:${PORT}${isProd ? ' (生产)' : ''}`);

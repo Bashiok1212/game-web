@@ -916,7 +916,7 @@ async function loadPlayerSpirits() {
     const { playerSpirits } = await res.json();
     if (!playerSpiritsTableBody) return;
     if (!playerSpirits || playerSpirits.length === 0) {
-      playerSpiritsTableBody.innerHTML = '<tr><td colspan="10" class="empty">暂无玩家妖灵</td></tr>';
+      playerSpiritsTableBody.innerHTML = '<tr><td colspan="11" class="empty">暂无玩家妖灵</td></tr>';
       return;
     }
     playerSpiritsTableBody.innerHTML = playerSpirits.map((p) => `
@@ -927,6 +927,7 @@ async function loadPlayerSpirits() {
         <td>Lv.${p.level ?? 1}</td>
         <td>${escapeHtml(p.nature || '')}</td>
         <td>${escapeHtml(p.nickname || '')}</td>
+        <td>${escapeHtml(p.originalTrainer || '')}</td>
         <td>${p.currentHp ?? '-'} </td>
         <td>${p.isShiny ? '★' : ''}</td>
         <td>${p.capturedAt ? new Date(p.capturedAt).toLocaleString() : ''}</td>
@@ -1093,6 +1094,7 @@ function fillPlayerSpiritDetailView(data) {
     }
     setVal('nickname', data.nickname || '');
     setVal('origin', data.origin || '');
+    setVal('originalTrainer', data.originalTrainer || '');
     setVal('currentHp', data.currentHp ?? 1);
     const statusVal = (data.status || 'none').trim();
     setVal('status', statusVal);
@@ -1188,6 +1190,7 @@ formPlayerSpiritDetail?.addEventListener('submit', async (e) => {
     nature: txt('nature'),
     nickname: txt('nickname'),
     origin: txt('origin'),
+    originalTrainer: txt('originalTrainer'),
     currentHp: num('currentHp'),
     status: txt('status'),
     friendship: num('friendship'),

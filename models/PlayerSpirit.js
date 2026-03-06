@@ -100,6 +100,12 @@ const playerSpiritSchema = new mongoose.Schema({
     default: '',
     maxlength: 64,
   },
+  originalTrainer: {
+    type: String,
+    default: '',
+    trim: true,
+    maxlength: 32,
+  },
   capturedAt: {
     type: Date,
     default: Date.now,

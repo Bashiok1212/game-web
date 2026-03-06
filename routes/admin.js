@@ -967,6 +967,7 @@ router.get('/player-spirits', authMiddleware, adminMiddleware, async (req, res) 
       level: p.level,
       nature: p.nature || '',
       nickname: p.nickname || '',
+      originalTrainer: p.originalTrainer || '',
       currentHp: p.currentHp,
       isShiny: !!p.isShiny,
       capturedAt: p.capturedAt,
@@ -1042,6 +1043,7 @@ router.post('/player-spirits', authMiddleware, adminMiddleware, async (req, res)
       friendship: 0,
       isShiny: false,
       origin: String(origin || '').trim() || 'admin_grant',
+      originalTrainer: String(character.name || '').trim().slice(0, 32),
     });
 
     const op = await User.findById(req.user.id).select('username');
@@ -1116,6 +1118,7 @@ router.get('/player-spirits/:id', authMiddleware, adminMiddleware, async (req, r
       friendship: doc.friendship ?? 0,
       isShiny: !!doc.isShiny,
       origin: doc.origin || '',
+      originalTrainer: doc.originalTrainer || '',
       capturedAt: doc.capturedAt,
     });
   } catch (err) {
@@ -1139,6 +1142,7 @@ router.put('/player-spirits/:id', authMiddleware, adminMiddleware, async (req, r
     if (body.friendship !== undefined) doc.friendship = clamp(body.friendship, 0, 255);
     if (body.isShiny !== undefined) doc.isShiny = !!body.isShiny;
     if (body.origin !== undefined) doc.origin = String(body.origin || '').trim().slice(0, 64);
+    if (body.originalTrainer !== undefined) doc.originalTrainer = String(body.originalTrainer || '').trim().slice(0, 32);
     const ivKeys = ['ivHp', 'ivAtk', 'ivDef', 'ivSpAtk', 'ivSpDef', 'ivSpeed'];
     ivKeys.forEach((k) => {
       if (body[k] !== undefined) doc[k] = clamp(body[k], 0, 31);

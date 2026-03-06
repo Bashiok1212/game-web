@@ -539,11 +539,11 @@
 
 **GET /api/admin/player-spirits** 查询参数：`userId`、`characterId`、`spiritNumber` 可选筛选。
 
-**GET /api/admin/player-spirits/:id** 响应：单只玩家妖灵完整信息，包含图鉴信息（spiritNumber、spiritName、spiritTypes、spiritStats、spiritDescription、spiritImage）、归属（userId、username、characterId、characterName、characterSlot）、个体值 ivHp～ivSpeed、努力值 evHp～evSpeed、等级/经验/性格、currentHp/status、heldItem、moves（技能列表含 skillId/skillName/pp/maxPp）、friendship、isShiny、origin、capturedAt。
+**GET /api/admin/player-spirits/:id** 响应：单只玩家妖灵完整信息，包含图鉴信息（spiritNumber、spiritName、spiritTypes、spiritStats、spiritDescription、spiritImage）、归属（userId、username、characterId、characterName、characterSlot）、个体值 ivHp～ivSpeed、努力值 evHp～evSpeed、等级/经验/性格、currentHp/status、heldItem、moves（技能列表含 skillId/skillName/pp/maxPp）、friendship、isShiny、origin、originalTrainer（初训家）、capturedAt。
 
 **POST /api/admin/player-spirits** 请求体：`spiritNumber`（必填）；目标二选一：`username`（账号名，如 ow）或 `characterId`（角色 ID）；可选 `level`、`nickname`、`origin`。若图鉴无该编号则自动创建图鉴妖灵再发放。
 
-**PUT /api/admin/player-spirits/:id** 请求体（均为可选）：`nickname`、`level`、`exp`、`nature`、`currentHp`、`status`、`friendship`（0～255）、`isShiny`、`origin`、`ivHp`～`ivSpeed`（0～31）、`evHp`～`evSpeed`（0～252，总和≤510）、`heldItemId`（空字符串表示卸下）、`moves`（数组，最多 4 项，每项 `{ skillId, pp, maxPp }`）。
+**PUT /api/admin/player-spirits/:id** 请求体（均为可选）：`nickname`、`level`、`exp`、`nature`、`currentHp`、`status`、`friendship`（0～255）、`isShiny`、`origin`、`originalTrainer`（初训家，最多 32 字）、`ivHp`～`ivSpeed`（0～31）、`evHp`～`evSpeed`（0～252，总和≤510）、`heldItemId`（空字符串表示卸下）、`moves`（数组，最多 4 项，每项 `{ skillId, pp, maxPp }`）。
 
 ---
 

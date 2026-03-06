@@ -1036,9 +1036,20 @@ async function ensureDetailSkillsOptions() {
     const sel = formPlayerSpiritDetail?.querySelector(`[name="move${i}_skill"]`);
     if (!sel) return;
     sel.innerHTML = '<option value="">—</option>' + detailSkillsList.map((s) =>
-      `<option value="${escapeHtml(s.id)}">#${String(s.number || 0).padStart(3, '0')} ${escapeHtml(s.name || '')}</option>`
+      `<option value="${escapeHtml(s.id)}" data-pp="${Number(s.pp) || 10}">#${String(s.number || 0).padStart(3, '0')} ${escapeHtml(s.name || '')}</option>`
     ).join('');
+    sel.onchange = () => syncMovePp(i);
   });
+}
+
+function syncMovePp(slotIndex) {
+  const sel = formPlayerSpiritDetail?.querySelector(`[name="move${slotIndex}_skill"]`);
+  const opt = sel?.selectedOptions?.[0];
+  const pp = opt?.dataset?.pp != null ? parseInt(opt.dataset.pp, 10) : 0;
+  const ppEl = formPlayerSpiritDetail?.querySelector(`[name="move${slotIndex}_pp"]`);
+  const maxPpEl = formPlayerSpiritDetail?.querySelector(`[name="move${slotIndex}_maxPp"]`);
+  if (ppEl) ppEl.value = isNaN(pp) ? 0 : pp;
+  if (maxPpEl) maxPpEl.value = isNaN(pp) ? 0 : pp;
 }
 
 function updatePlayerSpiritDetailEvSum() {
@@ -1083,7 +1094,16 @@ function fillPlayerSpiritDetailView(data) {
     setVal('nickname', data.nickname || '');
     setVal('origin', data.origin || '');
     setVal('currentHp', data.currentHp ?? 1);
-    setVal('status', data.status || 'none');
+    const statusVal = (data.status || 'none').trim();
+    setVal('status', statusVal);
+    const statusSel = formPlayerSpiritDetail.querySelector('[name="status"]');
+    if (statusSel && statusSel.value !== statusVal) {
+      const opt = document.createElement('option');
+      opt.value = statusVal;
+      opt.textContent = statusVal;
+      statusSel.appendChild(opt);
+      statusSel.value = statusVal;
+    }
     setVal('isShiny', data.isShiny);
     setVal('friendship', data.friendship ?? 0);
     ['ivHp', 'ivAtk', 'ivDef', 'ivSpAtk', 'ivSpDef', 'ivSpeed'].forEach((k) => setVal(k, data[k] ?? 0));

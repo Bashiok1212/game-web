@@ -534,7 +534,15 @@
                 <label>当前HP / 状态 / 异色 / 亲密度</label>
                 <div class="stats-grid">
                   <div><label>当前HP</label><input type="number" name="currentHp" min="0" value="1"></div>
-                  <div><label>状态</label><input type="text" name="status" maxlength="16" placeholder="none"></div>
+                  <div><label>状态</label><select name="status">
+                    <option value="none">无</option>
+                    <option value="poison">中毒</option>
+                    <option value="burn">灼伤</option>
+                    <option value="paralysis">麻痹</option>
+                    <option value="sleep">睡眠</option>
+                    <option value="freeze">冰冻</option>
+                    <option value="confusion">混乱</option>
+                  </select></div>
                   <div><label>异色</label><input type="checkbox" name="isShiny"></div>
                   <div><label>亲密度</label><input type="number" name="friendship" min="0" max="255" value="0"></div>
                 </div>

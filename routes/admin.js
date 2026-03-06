@@ -1049,6 +1049,121 @@ router.post('/player-spirits', authMiddleware, adminMiddleware, async (req, res)
   }
 });
 
+router.get('/player-spirits/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const doc = await PlayerSpirit.findById(req.params.id)
+      .populate('user', 'username')
+      .populate('character', 'name slot')
+      .populate('spirit')
+      .populate('heldItem', 'number name')
+      .populate('moves.skill', 'number name pp')
+      .lean();
+    if (!doc) return res.status(404).json({ error: '玩家妖灵不存在' });
+    const spirit = doc.spirit || {};
+    const list = (doc.moves || []).map((m) => ({
+      skillId: m.skill?._id?.toString(),
+      skillNumber: m.skill?.number,
+      skillName: m.skill?.name,
+      pp: m.pp,
+      maxPp: m.maxPp,
+    }));
+    res.json({
+      id: doc._id.toString(),
+      userId: doc.user?._id?.toString(),
+      username: doc.user?.username,
+      characterId: doc.character?._id?.toString(),
+      characterName: doc.character?.name,
+      characterSlot: doc.character?.slot,
+      spiritId: spirit._id?.toString(),
+      spiritNumber: spirit.number,
+      spiritName: spirit.name,
+      spiritTypes: spirit.types || [],
+      spiritStats: spirit.stats || {},
+      spiritDescription: spirit.description || '',
+      spiritImage: spirit.image || '',
+      nickname: doc.nickname || '',
+      level: doc.level ?? 1,
+      exp: doc.exp ?? 0,
+      nature: doc.nature || 'Hardy',
+      ivHp: doc.ivHp ?? 0,
+      ivAtk: doc.ivAtk ?? 0,
+      ivDef: doc.ivDef ?? 0,
+      ivSpAtk: doc.ivSpAtk ?? 0,
+      ivSpDef: doc.ivSpDef ?? 0,
+      ivSpeed: doc.ivSpeed ?? 0,
+      evHp: doc.evHp ?? 0,
+      evAtk: doc.evAtk ?? 0,
+      evDef: doc.evDef ?? 0,
+      evSpAtk: doc.evSpAtk ?? 0,
+      evSpDef: doc.evSpDef ?? 0,
+      evSpeed: doc.evSpeed ?? 0,
+      currentHp: doc.currentHp ?? 1,
+      status: doc.status || 'none',
+      heldItemId: doc.heldItem?._id?.toString(),
+      heldItemName: doc.heldItem?.name,
+      moves: list,
+      friendship: doc.friendship ?? 0,
+      isShiny: !!doc.isShiny,
+      origin: doc.origin || '',
+      capturedAt: doc.capturedAt,
+    });
+  } catch (err) {
+    console.error('Admin player-spirit get error:', err.message);
+    res.status(500).json({ error: '获取玩家妖灵详情失败' });
+  }
+});
+
+router.put('/player-spirits/:id', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const doc = await PlayerSpirit.findById(req.params.id);
+    if (!doc) return res.status(404).json({ error: '玩家妖灵不存在' });
+    const body = req.body || {};
+    const clamp = (v, min, max) => Math.min(max, Math.max(min, Number(v) || 0));
+    if (body.nickname !== undefined) doc.nickname = String(body.nickname || '').trim().slice(0, 32);
+    if (body.level !== undefined) doc.level = clamp(body.level, 1, 100);
+    if (body.exp !== undefined) doc.exp = Math.max(0, Number(body.exp) || 0);
+    if (body.nature !== undefined) doc.nature = String(body.nature || 'Hardy').trim().slice(0, 16);
+    if (body.currentHp !== undefined) doc.currentHp = Math.max(0, Number(body.currentHp) || 0);
+    if (body.status !== undefined) doc.status = String(body.status || 'none').trim().slice(0, 16);
+    if (body.friendship !== undefined) doc.friendship = clamp(body.friendship, 0, 255);
+    if (body.isShiny !== undefined) doc.isShiny = !!body.isShiny;
+    if (body.origin !== undefined) doc.origin = String(body.origin || '').trim().slice(0, 64);
+    const ivKeys = ['ivHp', 'ivAtk', 'ivDef', 'ivSpAtk', 'ivSpDef', 'ivSpeed'];
+    ivKeys.forEach((k) => {
+      if (body[k] !== undefined) doc[k] = clamp(body[k], 0, 31);
+    });
+    const evKeys = ['evHp', 'evAtk', 'evDef', 'evSpAtk', 'evSpDef', 'evSpeed'];
+    evKeys.forEach((k) => {
+      if (body[k] !== undefined) doc[k] = clamp(body[k], 0, 252);
+    });
+    const evSum = evKeys.reduce((s, k) => s + (doc[k] || 0), 0);
+    if (evSum > 510) return res.status(400).json({ error: '努力值总和不能超过510' });
+    if (body.heldItemId !== undefined) {
+      doc.heldItem = body.heldItemId === '' || body.heldItemId == null ? null : body.heldItemId;
+    }
+    if (Array.isArray(body.moves)) {
+      doc.moves = body.moves.slice(0, 4).map((m) => ({
+        skill: m.skillId || m.skill || null,
+        pp: clamp(m.pp, 0, 99),
+        maxPp: clamp(m.maxPp, 0, 99),
+      })).filter((m) => m.skill);
+    }
+    await doc.save();
+    const op = await User.findById(req.user.id).select('username');
+    await logAdminAction(
+      req.user.id,
+      op?.username,
+      'player_spirit',
+      `编辑玩家妖灵 ${doc._id}`,
+      doc._id.toString(),
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    if (err.name === 'ValidationError') return res.status(400).json({ error: err.message || '数据校验失败' });
+    console.error('Admin player-spirit update error:', err.message);
+    res.status(500).json({ error: '更新玩家妖灵失败' });
+  }
+});
 
 const ITEM_CATEGORIES = ['道具', '精灵球', '贵重物品', '药品', '商城', '时装'];
 

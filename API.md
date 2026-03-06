@@ -528,7 +528,26 @@
 
 ---
 
-### 3.9 节日管理（仅 OW）
+### 3.9 玩家妖灵管理
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/admin/player-spirits | 玩家妖灵列表 |
+| GET | /api/admin/player-spirits/:id | 玩家妖灵详情（完整个体信息） |
+| POST | /api/admin/player-spirits | 发放妖灵 |
+| PUT | /api/admin/player-spirits/:id | 更新玩家妖灵（等级/性格/IV/EV/技能等） |
+
+**GET /api/admin/player-spirits** 查询参数：`userId`、`characterId`、`spiritNumber` 可选筛选。
+
+**GET /api/admin/player-spirits/:id** 响应：单只玩家妖灵完整信息，包含图鉴信息（spiritNumber、spiritName、spiritTypes、spiritStats、spiritDescription、spiritImage）、归属（userId、username、characterId、characterName、characterSlot）、个体值 ivHp～ivSpeed、努力值 evHp～evSpeed、等级/经验/性格、currentHp/status、heldItem、moves（技能列表含 skillId/skillName/pp/maxPp）、friendship、isShiny、origin、capturedAt。
+
+**POST /api/admin/player-spirits** 请求体：`characterId`（必填）、`spiritNumber`（必填）、`level`、`nickname`、`origin`。若图鉴无该编号则自动创建图鉴妖灵再发放。
+
+**PUT /api/admin/player-spirits/:id** 请求体（均为可选）：`nickname`、`level`、`exp`、`nature`、`currentHp`、`status`、`friendship`（0～255）、`isShiny`、`origin`、`ivHp`～`ivSpeed`（0～31）、`evHp`～`evSpeed`（0～252，总和≤510）、`heldItemId`（空字符串表示卸下）、`moves`（数组，最多 4 项，每项 `{ skillId, pp, maxPp }`）。
+
+---
+
+### 3.10 节日管理（仅 OW）
 
 | 方法 | 路径 | 说明 | 权限 |
 |------|------|------|------|
@@ -613,6 +632,10 @@
 | /api/admin/player-items | POST | 发放物品 | admin/ow |
 | /api/admin/player-items/:id | PUT | 修改数量 | admin/ow |
 | /api/admin/player-items/:id | DELETE | 移除物品 | admin/ow |
+| /api/admin/player-spirits | GET | 玩家妖灵列表 | admin/ow |
+| /api/admin/player-spirits/:id | GET | 玩家妖灵详情 | admin/ow |
+| /api/admin/player-spirits | POST | 发放妖灵 | admin/ow |
+| /api/admin/player-spirits/:id | PUT | 更新玩家妖灵 | admin/ow |
 | /api/admin/festivals | GET | 节日列表 | ow |
 | /api/admin/festivals | POST | 添加节日 | ow |
 | /api/admin/festivals/:id | PUT | 更新节日 | ow |

@@ -868,6 +868,102 @@ async function loadItems() {
   }
 }
 
+// ========== 玩家妖灵管理 ==========
+
+const playerSpiritsTableBody = $('#playerSpiritsTableBody');
+const playerSpiritModal = $('#playerSpiritModal');
+const formPlayerSpirit = $('#formPlayerSpirit');
+
+$('#btnPlayerSpiritSearch')?.addEventListener('click', () => loadPlayerSpirits());
+$('#btnAddPlayerSpirit')?.addEventListener('click', () => openPlayerSpiritModal());
+$('#btnCancelPlayerSpirit')?.addEventListener('click', () => closePlayerSpiritModal());
+playerSpiritModal?.addEventListener('click', (e) => { if (e.target === playerSpiritModal) closePlayerSpiritModal(); });
+
+async function loadPlayerSpirits() {
+  const userId = $('#playerSpiritUserId')?.value?.trim() || '';
+  const characterId = $('#playerSpiritCharacterId')?.value?.trim() || '';
+  const spiritNumber = $('#playerSpiritNumber')?.value?.trim() || '';
+  const params = new URLSearchParams();
+  if (userId) params.set('userId', userId);
+  if (characterId) params.set('characterId', characterId);
+  if (spiritNumber) params.set('spiritNumber', spiritNumber);
+  try {
+    const res = await apiFetch('/admin/player-spirits?' + params.toString());
+    if (!res.ok) { if (res.status === 403) showSection(forbiddenSection); return; }
+    const { playerSpirits } = await res.json();
+    if (!playerSpiritsTableBody) return;
+    if (!playerSpirits || playerSpirits.length === 0) {
+      playerSpiritsTableBody.innerHTML = '<tr><td colspan="9" class="empty">暂无玩家妖灵</td></tr>';
+      return;
+    }
+    playerSpiritsTableBody.innerHTML = playerSpirits.map((p) => `
+      <tr>
+        <td>${escapeHtml(p.username || '')}<br><small>${escapeHtml(p.userId || '')}</small></td>
+        <td>${escapeHtml(p.characterName || '')}<br><small>${escapeHtml(p.characterId || '')}</small></td>
+        <td>#${String(p.spiritNumber || 0).padStart(3, '0')} ${escapeHtml(p.spiritName || '')}</td>
+        <td>Lv.${p.level ?? 1}</td>
+        <td>${escapeHtml(p.nature || '')}</td>
+        <td>${escapeHtml(p.nickname || '')}</td>
+        <td>${p.currentHp ?? '-'} </td>
+        <td>${p.isShiny ? '★' : ''}</td>
+        <td>${p.capturedAt ? new Date(p.capturedAt).toLocaleString() : ''}</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function openPlayerSpiritModal() {
+  if (!playerSpiritModal || !formPlayerSpirit) return;
+  formPlayerSpirit.reset();
+  formPlayerSpirit.id.value = '';
+  formPlayerSpirit.characterId.value = '';
+  formPlayerSpirit.spiritNumber.value = '';
+  formPlayerSpirit.level.value = '1';
+  formPlayerSpirit.nickname.value = '';
+  formPlayerSpirit.origin.value = '';
+  playerSpiritModal.classList.remove('hidden');
+}
+
+function closePlayerSpiritModal() {
+  if (!playerSpiritModal) return;
+  playerSpiritModal.classList.add('hidden');
+}
+
+formPlayerSpirit?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const payload = {
+    characterId: form.characterId?.value?.trim(),
+    spiritNumber: form.spiritNumber?.value?.trim(),
+    level: form.level?.value?.trim(),
+    nickname: form.nickname?.value?.trim(),
+    origin: form.origin?.value?.trim(),
+  };
+  if (!payload.characterId || !payload.spiritNumber) {
+    alert('角色ID和妖灵编号为必填');
+    return;
+  }
+  try {
+    const res = await apiFetch('/admin/player-spirits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.ok === false) {
+      alert(json.error || '发放失败');
+      return;
+    }
+    closePlayerSpiritModal();
+    loadPlayerSpirits();
+  } catch (err) {
+    console.error(err);
+    alert('网络错误');
+  }
+});
+
 function openItemModal(id) {
   if (id) {
     $('#itemModalTitle').textContent = '编辑物品';

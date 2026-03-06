@@ -40,6 +40,7 @@
         <button type="button" class="admin-tab" data-tab="items">物品管理</button>
         <button type="button" class="admin-tab" data-tab="characters">角色管理</button>
         <button type="button" class="admin-tab" data-tab="playerItems">玩家背包</button>
+        <button type="button" class="admin-tab" data-tab="playerSpirits">玩家妖灵</button>
         <button type="button" class="admin-tab" data-tab="festivals" id="tabFestivalsBtn">节日管理</button>
         <button type="button" class="admin-tab" data-tab="owChat" id="tabOwChatBtn">OW 聊天</button>
         <button type="button" class="admin-tab" data-tab="mail" id="tabMailBtn">邮件发送</button>
@@ -404,6 +405,71 @@
             <tbody id="playerItemsTableBody"></tbody>
           </table>
         </div>
+      </section>
+
+      <section id="tabPlayerSpirits" class="admin-tab-panel">
+        <p class="festival-hint" style="margin-bottom:0.5rem">查看玩家妖灵，可按账号 / 角色 / 妖灵编号筛选，并手动发放新妖灵。</p>
+        <div class="spirits-toolbar">
+          <div class="spirits-search">
+            <input type="text" id="playerSpiritUserId" placeholder="用户ID（可空）" style="width:160px">
+            <input type="text" id="playerSpiritCharacterId" placeholder="角色ID（可空）" style="width:160px">
+            <input type="number" id="playerSpiritNumber" placeholder="妖灵编号（可空）" style="width:140px" min="1">
+            <button type="button" id="btnPlayerSpiritSearch" class="btn btn-primary">筛选</button>
+          </div>
+          <button type="button" id="btnAddPlayerSpirit" class="btn btn-primary">+ 发放妖灵</button>
+        </div>
+        <div class="spirits-table-wrap">
+          <table class="spirits-table">
+            <thead>
+              <tr>
+                <th>账号</th>
+                <th>角色</th>
+                <th>妖灵</th>
+                <th>等级</th>
+                <th>性格</th>
+                <th>昵称</th>
+                <th>当前HP</th>
+                <th>异色</th>
+                <th>获取时间</th>
+              </tr>
+            </thead>
+            <tbody id="playerSpiritsTableBody"></tbody>
+          </table>
+        </div>
+
+        <dialog id="playerSpiritModal" class="admin-modal hidden">
+          <div class="admin-modal-backdrop"></div>
+          <div class="admin-modal-content">
+            <h3 id="playerSpiritModalTitle">发放妖灵</h3>
+            <form id="formPlayerSpirit">
+              <input type="hidden" name="id" id="playerSpiritId">
+              <div class="form-row">
+                <label class="form-label">角色ID<span class="required">*</span></label>
+                <input type="text" name="characterId" id="playerSpiritCharacterInput" placeholder="目标角色ID" required>
+              </div>
+              <div class="form-row">
+                <label class="form-label">妖灵编号<span class="required">*</span></label>
+                <input type="number" name="spiritNumber" id="playerSpiritNumberInput" placeholder="例如 1" min="1" required>
+              </div>
+              <div class="form-row">
+                <label class="form-label">等级</label>
+                <input type="number" name="level" id="playerSpiritLevelInput" placeholder="1～100" min="1" max="100" value="1">
+              </div>
+              <div class="form-row">
+                <label class="form-label">昵称（可选）</label>
+                <input type="text" name="nickname" id="playerSpiritNicknameInput" maxlength="32">
+              </div>
+              <div class="form-row">
+                <label class="form-label">来源说明（可选）</label>
+                <input type="text" name="origin" id="playerSpiritOriginInput" maxlength="64" placeholder="例如 活动奖励/后台发放">
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">保存</button>
+                <button type="button" class="btn btn-secondary" id="btnCancelPlayerSpirit">取消</button>
+              </div>
+            </form>
+          </div>
+        </dialog>
       </section>
 
       <!-- 妖灵编辑弹层 -->

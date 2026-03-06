@@ -4,6 +4,7 @@ const Spirit = require('../models/Spirit');
 const Skill = require('../models/Skill');
 const Item = require('../models/Item');
 const PlayerItem = require('../models/PlayerItem');
+const PlayerSpirit = require('../models/PlayerSpirit');
 const Character = require('../models/Character');
 const Festival = require('../models/Festival');
 const Mail = require('../models/Mail');
@@ -931,6 +932,105 @@ router.delete('/player-items/:id', authMiddleware, adminMiddleware, async (req, 
     res.status(500).json({ error: '删除失败' });
   }
 });
+
+// ========== 玩家妖灵管理 ==========
+
+router.get('/player-spirits', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { userId, characterId, spiritNumber } = req.query;
+    const filter = {};
+    if (userId) filter.user = userId;
+    if (characterId) filter.character = characterId;
+    if (spiritNumber) {
+      const num = Number(spiritNumber) || 0;
+      const spirits = await Spirit.find({ number: num }).select('_id').lean();
+      if (spirits.length === 0) return res.json({ playerSpirits: [] });
+      filter.spirit = spirits[0]._id;
+    }
+    const docs = await PlayerSpirit.find(filter)
+      .populate('user', 'username')
+      .populate('character', 'name slot')
+      .populate('spirit', 'number name types')
+      .sort({ capturedAt: -1 })
+      .limit(200)
+      .lean();
+    const list = docs.map((p) => ({
+      id: p._id.toString(),
+      userId: p.user?._id?.toString() || '',
+      username: p.user?.username || '',
+      characterId: p.character?._id?.toString() || '',
+      characterName: p.character?.name || '',
+      characterSlot: p.character?.slot ?? null,
+      spiritId: p.spirit?._id?.toString() || '',
+      spiritNumber: p.spirit?.number || 0,
+      spiritName: p.spirit?.name || '',
+      level: p.level,
+      nature: p.nature || '',
+      nickname: p.nickname || '',
+      currentHp: p.currentHp,
+      isShiny: !!p.isShiny,
+      capturedAt: p.capturedAt,
+    }));
+    res.json({ playerSpirits: list });
+  } catch (err) {
+    console.error('Admin player-spirits list error:', err.message);
+    res.status(500).json({ error: '获取玩家妖灵列表失败' });
+  }
+});
+
+router.post('/player-spirits', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { characterId, spiritNumber, level, nickname, origin } = req.body || {};
+    if (!characterId) return res.status(400).json({ error: '角色为必填' });
+    if (!spiritNumber) return res.status(400).json({ error: '妖灵编号为必填' });
+
+    const character = await Character.findById(characterId).populate('user', 'username').lean();
+    if (!character) return res.status(404).json({ error: '角色不存在' });
+
+    const num = Number(spiritNumber) || 0;
+    const spirit = await Spirit.findOne({ number: num }).lean();
+    if (!spirit) return res.status(404).json({ error: '妖灵编号不存在' });
+
+    const lvl = Math.max(1, Math.min(100, Number(level) || 1));
+    const randIv = () => Math.floor(Math.random() * 32); // 0~31
+
+    const doc = await PlayerSpirit.create({
+      user: character.user,
+      character: character._id,
+      spirit: spirit._id,
+      nickname: String(nickname || '').trim() || '',
+      level: lvl,
+      exp: 0,
+      nature: 'Hardy',
+      ivHp: randIv(),
+      ivAtk: randIv(),
+      ivDef: randIv(),
+      ivSpAtk: randIv(),
+      ivSpDef: randIv(),
+      ivSpeed: randIv(),
+      currentHp: 1,
+      status: 'none',
+      friendship: 0,
+      isShiny: false,
+      origin: String(origin || '').trim() || 'admin_grant',
+    });
+
+    const op = await User.findById(req.user.id).select('username');
+    await logAdminAction(
+      req.user.id,
+      op?.username,
+      'player_spirit',
+      `发放妖灵 #${spirit.number} ${spirit.name || ''} Lv.${lvl} 给角色 ${character.name} (user=${character.user})`,
+      doc._id.toString(),
+    );
+
+    res.json({ ok: true, id: doc._id.toString() });
+  } catch (err) {
+    console.error('Admin player-spirits create error:', err.message);
+    res.status(500).json({ error: '发放妖灵失败' });
+  }
+});
+
 
 const ITEM_CATEGORIES = ['道具', '精灵球', '贵重物品', '药品', '商城', '时装'];
 

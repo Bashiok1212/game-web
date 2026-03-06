@@ -971,6 +971,8 @@ router.get('/player-spirits', authMiddleware, adminMiddleware, async (req, res) 
       currentHp: p.currentHp,
       isShiny: !!p.isShiny,
       capturedAt: p.capturedAt,
+      capturedPlace: p.capturedPlace || '',
+      ballType: p.ballType || '',
     }));
     res.json({ playerSpirits: list });
   } catch (err) {
@@ -981,7 +983,16 @@ router.get('/player-spirits', authMiddleware, adminMiddleware, async (req, res) 
 
 router.post('/player-spirits', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { characterId, username, spiritNumber, level, nickname, origin } = req.body || {};
+    const {
+      characterId,
+      username,
+      spiritNumber,
+      level,
+      nickname,
+      origin,
+      capturedPlace,
+      ballType,
+    } = req.body || {};
     if (!spiritNumber) return res.status(400).json({ error: '妖灵编号为必填' });
 
     let character;
@@ -1044,6 +1055,8 @@ router.post('/player-spirits', authMiddleware, adminMiddleware, async (req, res)
       isShiny: false,
       origin: String(origin || '').trim() || 'admin_grant',
       originalTrainer: String(character.name || '').trim().slice(0, 32),
+      capturedPlace: String(capturedPlace || '').trim().slice(0, 64),
+      ballType: String(ballType || '').trim().slice(0, 32),
     });
 
     const op = await User.findById(req.user.id).select('username');
@@ -1120,6 +1133,8 @@ router.get('/player-spirits/:id', authMiddleware, adminMiddleware, async (req, r
       origin: doc.origin || '',
       originalTrainer: doc.originalTrainer || '',
       capturedAt: doc.capturedAt,
+      capturedPlace: doc.capturedPlace || '',
+      ballType: doc.ballType || '',
     });
   } catch (err) {
     console.error('Admin player-spirit get error:', err.message);
@@ -1143,6 +1158,12 @@ router.put('/player-spirits/:id', authMiddleware, adminMiddleware, async (req, r
     if (body.isShiny !== undefined) doc.isShiny = !!body.isShiny;
     if (body.origin !== undefined) doc.origin = String(body.origin || '').trim().slice(0, 64);
     if (body.originalTrainer !== undefined) doc.originalTrainer = String(body.originalTrainer || '').trim().slice(0, 32);
+    if (body.capturedAt !== undefined) {
+      const t = body.capturedAt ? new Date(body.capturedAt) : null;
+      doc.capturedAt = t && !isNaN(t.getTime()) ? t : doc.capturedAt;
+    }
+    if (body.capturedPlace !== undefined) doc.capturedPlace = String(body.capturedPlace || '').trim().slice(0, 64);
+    if (body.ballType !== undefined) doc.ballType = String(body.ballType || '').trim().slice(0, 32);
     const ivKeys = ['ivHp', 'ivAtk', 'ivDef', 'ivSpAtk', 'ivSpDef', 'ivSpeed'];
     ivKeys.forEach((k) => {
       if (body[k] !== undefined) doc[k] = clamp(body[k], 0, 31);

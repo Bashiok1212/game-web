@@ -992,7 +992,7 @@ formPlayerSpirit?.addEventListener('submit', async (e) => {
     spiritNumber: spiritNumber || undefined,
     level: form.querySelector('[name="level"]')?.value?.trim(),
     nickname: form.querySelector('[name="nickname"]')?.value?.trim(),
-    origin: form.querySelector('[name="origin"]')?.value?.trim(),
+    capturedPlace: form.querySelector('[name="capturedPlace"]')?.value?.trim(),
   };
   if (!payload.username || !payload.spiritNumber) {
     alert('发放给账号和妖灵编号为必填');
@@ -1025,6 +1025,7 @@ const playerSpiritDetailBase = $('#playerSpiritDetailBase');
 const playerSpiritDetailEvSum = $('#playerSpiritDetailEvSum');
 
 let detailSkillsList = [];
+let detailItemsList = [];
 async function ensureDetailSkillsOptions() {
   if (detailSkillsList.length > 0) return;
   try {
@@ -1041,6 +1042,21 @@ async function ensureDetailSkillsOptions() {
     ).join('');
     sel.onchange = () => syncMovePp(i);
   });
+}
+
+async function ensureDetailItemsOptions() {
+  if (detailItemsList.length > 0) return;
+  try {
+    const res = await apiFetch('/admin/items?sort=number&order=asc');
+    if (!res.ok) return;
+    const json = await res.json();
+    detailItemsList = json.items || [];
+  } catch (_) {}
+  const sel = formPlayerSpiritDetail?.querySelector('[name="heldItemId"]');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">无</option>' + detailItemsList.map((i) =>
+    `<option value="${escapeHtml(i.id)}">#${String(i.number || 0).padStart(3, '0')} ${escapeHtml(i.name || '')}</option>`
+  ).join('');
 }
 
 function syncMovePp(slotIndex) {
@@ -1093,8 +1109,17 @@ function fillPlayerSpiritDetailView(data) {
       natureSel.value = natureVal;
     }
     setVal('nickname', data.nickname || '');
-    setVal('origin', data.origin || '');
     setVal('originalTrainer', data.originalTrainer || '');
+    if (data.capturedAt) {
+      const d = new Date(data.capturedAt);
+      if (!isNaN(d.getTime())) {
+        const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+        const h = String(d.getHours()).padStart(2, '0'), min = String(d.getMinutes()).padStart(2, '0');
+        setVal('capturedAt', `${y}-${m}-${day}T${h}:${min}`);
+      } else setVal('capturedAt', '');
+    } else setVal('capturedAt', '');
+    setVal('capturedPlace', data.capturedPlace || '');
+    setVal('ballType', data.ballType || '');
     setVal('currentHp', data.currentHp ?? 1);
     const statusVal = (data.status || 'none').trim();
     setVal('status', statusVal);
@@ -1110,6 +1135,17 @@ function fillPlayerSpiritDetailView(data) {
     setVal('friendship', data.friendship ?? 0);
     ['ivHp', 'ivAtk', 'ivDef', 'ivSpAtk', 'ivSpDef', 'ivSpeed'].forEach((k) => setVal(k, data[k] ?? 0));
     ['evHp', 'evAtk', 'evDef', 'evSpAtk', 'evSpDef', 'evSpeed'].forEach((k) => setVal(k, data[k] ?? 0));
+    const heldSel = formPlayerSpiritDetail.querySelector('[name="heldItemId"]');
+    if (heldSel) {
+      const heldId = data.heldItemId || '';
+      if (heldId && !Array.from(heldSel.options).some((o) => o.value === heldId)) {
+        const opt = document.createElement('option');
+        opt.value = heldId;
+        opt.textContent = data.heldItemName || '未知道具';
+        heldSel.appendChild(opt);
+      }
+      setVal('heldItemId', heldId);
+    }
     const moves = Array.isArray(data.moves) ? data.moves : [];
     [0, 1, 2, 3].forEach((i) => {
       const m = moves[i];
@@ -1125,6 +1161,7 @@ async function openPlayerSpiritDetail(id) {
   if (!id) return;
   try {
     await ensureDetailSkillsOptions();
+    await ensureDetailItemsOptions();
     const res = await apiFetch('/admin/player-spirits/' + id, {});
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
@@ -1189,8 +1226,14 @@ formPlayerSpiritDetail?.addEventListener('submit', async (e) => {
     exp: num('exp'),
     nature: txt('nature'),
     nickname: txt('nickname'),
-    origin: txt('origin'),
     originalTrainer: txt('originalTrainer'),
+    capturedAt: (() => {
+      const v = form.querySelector('[name="capturedAt"]')?.value;
+      return v ? new Date(v).toISOString() : undefined;
+    })(),
+    capturedPlace: txt('capturedPlace'),
+    heldItemId: txt('heldItemId'),
+    ballType: txt('ballType'),
     currentHp: num('currentHp'),
     status: txt('status'),
     friendship: num('friendship'),

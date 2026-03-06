@@ -110,6 +110,18 @@ const playerSpiritSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  capturedPlace: {
+    type: String,
+    default: '',
+    trim: true,
+    maxlength: 64,
+  },
+  ballType: {
+    type: String,
+    default: '',
+    trim: true,
+    maxlength: 32,
+  },
 });
 
 playerSpiritSchema.index({ character: 1, level: -1 });

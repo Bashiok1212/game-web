@@ -464,8 +464,8 @@
                 <input type="text" name="nickname" id="playerSpiritNicknameInput" maxlength="32">
               </div>
               <div class="form-row">
-                <label class="form-label">来源说明（可选）</label>
-                <input type="text" name="origin" id="playerSpiritOriginInput" maxlength="64" placeholder="例如 活动奖励/后台发放">
+                <label class="form-label">捕获地点（可选）</label>
+                <input type="text" name="capturedPlace" id="playerSpiritCapturedPlaceInput" maxlength="64" placeholder="例如 常青森林">
               </div>
               <div class="form-actions">
                 <button type="submit" class="btn btn-primary">保存</button>
@@ -525,11 +525,17 @@
                 </div>
               </div>
               <div class="form-row">
-                <label>昵称 / 来源 / 初训家</label>
+                <label>昵称 / 初训家</label>
                 <div class="stats-grid">
                   <div><label>昵称</label><input type="text" name="nickname" maxlength="32"></div>
-                  <div><label>来源说明</label><input type="text" name="origin" maxlength="64"></div>
                   <div><label>初训家</label><input type="text" name="originalTrainer" maxlength="32" placeholder="首次获得该妖灵的角色名"></div>
+                </div>
+              </div>
+              <div class="form-row">
+                <label>捕获时间 / 捕获地点</label>
+                <div class="stats-grid">
+                  <div><label>捕获时间</label><input type="datetime-local" name="capturedAt"></div>
+                  <div><label>捕获地点</label><input type="text" name="capturedPlace" maxlength="64" placeholder="例如 常青森林"></div>
                 </div>
               </div>
               <div class="form-row">
@@ -547,6 +553,13 @@
                   </select></div>
                   <div><label>异色</label><input type="checkbox" name="isShiny"></div>
                   <div><label>亲密度</label><input type="number" name="friendship" min="0" max="255" value="0"></div>
+                </div>
+              </div>
+              <div class="form-row">
+                <label>持有道具 / 球种</label>
+                <div class="stats-grid">
+                  <div><label>持有道具</label><select name="heldItemId"><option value="">无</option></select></div>
+                  <div><label>球种</label><input type="text" name="ballType" maxlength="32" placeholder="例如 精灵球"></div>
                 </div>
               </div>
               <div class="form-row">

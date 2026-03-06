@@ -248,13 +248,12 @@ router.post('/mail/send', authMiddleware, adminMiddleware, async (req, res) => {
       gold,
       goldClaimed: false,
     }));
-    const inserted = await Mail.insertMany(docs);
+    await Mail.insertMany(docs);
 
-    // WS 即时通知：目标角色收到新邮件后，客户端可立即刷新列表
+    // WS 即时通知：目标角色收到新邮件后，客户端立即显示图标/刷新列表
+    // 不在这里计算 unread（群发时会很重）；订阅时会推一次 unread，读/删/领时会推 unread 更新。
     try {
-      for (const ch of characters) {
-        wsHub.notifyMailNew(ch._id.toString(), null);
-      }
+      for (const ch of characters) wsHub.notifyMailNew(ch._id.toString(), null);
     } catch (_) {}
 
     const op = await User.findById(req.user.id).select('username');

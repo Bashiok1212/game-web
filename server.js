@@ -23,6 +23,7 @@ const { authMiddleware, JWT_SECRET } = require('./middleware/auth');
 const Character = require('./models/Character');
 const PlayerItem = require('./models/PlayerItem');
 const ChatMessage = require('./models/ChatMessage');
+const Mail = require('./models/Mail');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -213,6 +214,11 @@ wss.on('connection', (ws, req) => {
       }
       if (ws.subscribedCharacters) ws.subscribedCharacters.add(String(characterId));
       wsHub.sendJson(ws, { type: 'mail_subscribed', characterId: String(characterId) });
+      // 订阅成功后立即推一次当前未读数（避免客户端再走 HTTP 拉取）
+      try {
+        const unread = await Mail.countDocuments({ user: ws.user.id, character: characterId, isRead: false });
+        wsHub.sendJson(ws, { type: 'mail_unread', characterId: String(characterId), unread });
+      } catch (_) {}
       return;
     }
 

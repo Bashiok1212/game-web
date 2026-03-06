@@ -4,6 +4,7 @@ const { authMiddleware } = require('../middleware/auth');
 const Mail = require('../models/Mail');
 const PlayerItem = require('../models/PlayerItem');
 const Character = require('../models/Character');
+const wsHub = require('../wsHub');
 
 // 获取未读邮件数量（按角色维度）
 // GET /api/mail/unread-count?characterId=xxx
@@ -83,6 +84,11 @@ router.post('/mail/:id/read', authMiddleware, async (req, res) => {
       mail.read_at = new Date();
       await mail.save();
     }
+    // WS 推送未读数更新（图标无需再轮询）
+    try {
+      const unread = await Mail.countDocuments({ user: req.user.id, character: mail.character, isRead: false });
+      wsHub.notifyMailUnread(mail.character?.toString(), unread);
+    } catch (_) {}
     res.json({ ok: true });
   } catch (err) {
     console.error('Mail mark-read error:', err.message);
@@ -190,6 +196,12 @@ router.post('/mail/:id/claim', authMiddleware, async (req, res) => {
     if (!mail.read_at) mail.read_at = new Date();
     await mail.save();
 
+    // WS 推送未读数更新（领取时也会置为已读）
+    try {
+      const unread = await Mail.countDocuments({ user: req.user.id, character: mail.character?._id || mail.character, isRead: false });
+      wsHub.notifyMailUnread((mail.character?._id || mail.character)?.toString(), unread);
+    } catch (_) {}
+
     res.json({ ok: true, received: results });
   } catch (err) {
     console.error('Mail claim error:', err.message);
@@ -205,6 +217,10 @@ router.delete('/mail/:id', authMiddleware, async (req, res) => {
     const mail = await Mail.findOne({ _id: id, user: req.user.id });
     if (!mail) return res.status(404).json({ error: '邮件不存在' });
     await Mail.deleteOne({ _id: id, user: req.user.id });
+    try {
+      const unread = await Mail.countDocuments({ user: req.user.id, character: mail.character, isRead: false });
+      wsHub.notifyMailUnread(mail.character?.toString(), unread);
+    } catch (_) {}
     res.json({ ok: true });
   } catch (err) {
     console.error('Mail delete error:', err.message);

@@ -38,11 +38,25 @@ function notifyMailNew(characterId, mailId) {
   }
 }
 
+function notifyMailUnread(characterId, unread) {
+  if (!characterId) return;
+  const n = Number.isFinite(Number(unread)) ? Math.max(0, Math.floor(Number(unread))) : 0;
+  const data = JSON.stringify({ type: 'mail_unread', characterId: String(characterId), unread: n });
+  for (const client of clients) {
+    if (client.readyState !== WebSocket.OPEN) continue;
+    const subs = client.subscribedCharacters;
+    if (subs && typeof subs.has === 'function' && subs.has(String(characterId))) {
+      try { client.send(data); } catch (_) {}
+    }
+  }
+}
+
 module.exports = {
   addClient,
   removeClient,
   sendJson,
   broadcastJson,
   notifyMailNew,
+  notifyMailUnread,
 };
 

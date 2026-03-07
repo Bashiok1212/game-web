@@ -1052,11 +1052,19 @@ async function ensureDetailItemsOptions() {
     const json = await res.json();
     detailItemsList = json.items || [];
   } catch (_) {}
-  const sel = formPlayerSpiritDetail?.querySelector('[name="heldItemId"]');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">无</option>' + detailItemsList.map((i) =>
-    `<option value="${escapeHtml(i.id)}">#${String(i.number || 0).padStart(3, '0')} ${escapeHtml(i.name || '')}</option>`
-  ).join('');
+  const heldSel = formPlayerSpiritDetail?.querySelector('[name="heldItemId"]');
+  if (heldSel) {
+    heldSel.innerHTML = '<option value="">无</option>' + detailItemsList.map((i) =>
+      `<option value="${escapeHtml(i.id)}">#${String(i.number || 0).padStart(3, '0')} ${escapeHtml(i.name || '')}</option>`
+    ).join('');
+  }
+  const ballSel = formPlayerSpiritDetail?.querySelector('[name="ballType"]');
+  if (ballSel) {
+    const balls = detailItemsList.filter((i) => (i.category || '') === '精灵球');
+    ballSel.innerHTML = '<option value="">—</option>' + balls.map((i) =>
+      `<option value="${escapeHtml(i.id)}">#${String(i.number || 0).padStart(3, '0')} ${escapeHtml(i.name || '')}</option>`
+    ).join('');
+  }
 }
 
 function syncMovePp(slotIndex) {
@@ -1119,7 +1127,16 @@ function fillPlayerSpiritDetailView(data) {
       } else setVal('capturedAt', '');
     } else setVal('capturedAt', '');
     setVal('capturedPlace', data.capturedPlace || '');
-    setVal('ballType', data.ballType || '');
+    const ballTypeVal = (data.ballType || '').trim();
+    setVal('ballType', ballTypeVal);
+    const ballSel = formPlayerSpiritDetail.querySelector('[name="ballType"]');
+    if (ballSel && ballTypeVal && ballSel.value !== ballTypeVal) {
+      const opt = document.createElement('option');
+      opt.value = ballTypeVal;
+      opt.textContent = detailItemsList.find((i) => i.id === ballTypeVal)?.name || ballTypeVal;
+      ballSel.appendChild(opt);
+      ballSel.value = ballTypeVal;
+    }
     setVal('currentHp', data.currentHp ?? 1);
     const statusVal = (data.status || 'none').trim();
     setVal('status', statusVal);

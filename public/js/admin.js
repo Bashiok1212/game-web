@@ -1167,6 +1167,12 @@ function fillPlayerSpiritDetailView(data) {
       }
       setVal('heldItemId', heldId);
     }
+    const ribbons = Array.isArray(data.ribbons) ? data.ribbons : [];
+    const protons = Array.isArray(data.protons) ? data.protons : [];
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach((i) => {
+      setVal('ribbon' + i, ribbons.includes(i));
+      setVal('proton' + i, protons.includes(i));
+    });
     const moves = Array.isArray(data.moves) ? data.moves : [];
     [0, 1, 2, 3].forEach((i) => {
       const m = moves[i];
@@ -1261,6 +1267,20 @@ formPlayerSpiritDetail?.addEventListener('submit', async (e) => {
     slotInBox: num('slotInBox'),
     heldItemId: txt('heldItemId'),
     ballType: txt('ballType'),
+    ribbons: (() => {
+      const arr = [];
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach((i) => {
+        if (form.querySelector(`[name="ribbon${i}"]`)?.checked) arr.push(i);
+      });
+      return arr;
+    })(),
+    protons: (() => {
+      const arr = [];
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].forEach((i) => {
+        if (form.querySelector(`[name="proton${i}"]`)?.checked) arr.push(i);
+      });
+      return arr;
+    })(),
     currentHp: num('currentHp'),
     status: txt('status'),
     friendship: num('friendship'),

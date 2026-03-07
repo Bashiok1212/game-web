@@ -1144,6 +1144,8 @@ router.get('/player-spirits/:id', authMiddleware, adminMiddleware, async (req, r
       partySlot: doc.partySlot != null ? doc.partySlot : null,
       boxIndex: doc.boxIndex ?? 0,
       slotInBox: doc.slotInBox ?? 0,
+      ribbons: Array.isArray(doc.ribbons) ? doc.ribbons.filter((n) => n >= 1 && n <= 10) : [],
+      protons: Array.isArray(doc.protons) ? doc.protons.filter((n) => n >= 1 && n <= 10) : [],
     });
   } catch (err) {
     console.error('Admin player-spirit get error:', err.message);
@@ -1179,6 +1181,16 @@ router.put('/player-spirits/:id', authMiddleware, adminMiddleware, async (req, r
     }
     if (body.boxIndex !== undefined) doc.boxIndex = Math.max(0, Math.min(999, Number(body.boxIndex) || 0));
     if (body.slotInBox !== undefined) doc.slotInBox = Math.max(0, Math.min(999, Number(body.slotInBox) || 0));
+    if (body.ribbons !== undefined) {
+      doc.ribbons = Array.isArray(body.ribbons)
+        ? body.ribbons.map((n) => Math.min(10, Math.max(1, Number(n) || 0))).filter((n) => n >= 1 && n <= 10)
+        : [];
+    }
+    if (body.protons !== undefined) {
+      doc.protons = Array.isArray(body.protons)
+        ? body.protons.map((n) => Math.min(10, Math.max(1, Number(n) || 0))).filter((n) => n >= 1 && n <= 10)
+        : [];
+    }
     const ivKeys = ['ivHp', 'ivAtk', 'ivDef', 'ivSpAtk', 'ivSpDef', 'ivSpeed'];
     ivKeys.forEach((k) => {
       if (body[k] !== undefined) doc[k] = clamp(body[k], 0, 31);

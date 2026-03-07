@@ -140,6 +140,19 @@ const playerSpiritSchema = new mongoose.Schema({
     default: 0,
     min: 0,
   },
+
+  // 缎带 1～10（可多选，存编号）
+  ribbons: [{
+    type: Number,
+    min: 1,
+    max: 10,
+  }],
+  // 质子 1～10（可多选，存编号）
+  protons: [{
+    type: Number,
+    min: 1,
+    max: 10,
+  }],
 });
 
 playerSpiritSchema.index({ character: 1, level: -1 });

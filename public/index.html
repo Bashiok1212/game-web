@@ -31,9 +31,9 @@
         <div class="hero-actions hidden" id="heroLoggedIn">
           <p class="hero-welcome">欢迎回来，<span id="heroUsername"></span></p>
           <p class="hero-hint">游戏即将上线，敬请期待</p>
-          <!-- 队伍妖灵条 SpiritBar：6 格，先显示图片 -->
+          <!-- 队伍快捷栏：6 格显示妖灵图片 -->
           <section class="spirit-bar-section" id="spiritBarSection">
-            <h3 class="spirit-bar-title">队伍</h3>
+            <h3 class="spirit-bar-title">队伍快捷栏</h3>
             <div class="spirit-bar" id="spiritBar">
               <div class="spirit-bar-slot" data-slot="0" title="队伍 1"><img src="" alt="" class="spirit-bar-img"><span class="spirit-bar-empty">空</span></div>
               <div class="spirit-bar-slot" data-slot="1" title="队伍 2"><img src="" alt="" class="spirit-bar-img"><span class="spirit-bar-empty">空</span></div>
@@ -42,6 +42,11 @@
               <div class="spirit-bar-slot" data-slot="4" title="队伍 5"><img src="" alt="" class="spirit-bar-img"><span class="spirit-bar-empty">空</span></div>
               <div class="spirit-bar-slot" data-slot="5" title="队伍 6"><img src="" alt="" class="spirit-bar-img"><span class="spirit-bar-empty">空</span></div>
             </div>
+          </section>
+          <!-- 妖灵图鉴 1～151：纯代码本地图 -->
+          <section class="spirit-dex-section" id="spiritDexSection">
+            <h3 class="spirit-dex-title">妖灵图鉴（1～151）</h3>
+            <div class="spirit-dex-grid" id="spiritDexGrid"></div>
           </section>
           <section class="characters-section" id="charactersSection">
             <h3>我的角色</h3>

@@ -96,6 +96,7 @@ async function loadCharacters() {
     const firstCharId = chars[0]?.id || null;
     if (firstCharId) loadParty(firstCharId);
     else renderSpiritBar([]);
+    renderSpiritDex();
   } catch (_) {}
 }
 
@@ -113,6 +114,21 @@ async function loadParty(characterId) {
   }
 }
 
+function renderSpiritDex() {
+  const grid = $('#spiritDexGrid');
+  if (!grid) return;
+  let html = '';
+  for (let n = 1; n <= 151; n++) {
+    const src = getLocalSpiritImage(n);
+    html += '<div class="spirit-dex-cell" title="妖灵' + n + '"><img src="' + src + '" alt="妖灵' + n + '" data-n="' + n + '"></div>';
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('img').forEach(function (img) {
+    const n = parseInt(img.getAttribute('data-n'), 10);
+    if (n >= 1 && n <= 151) img.onerror = function () { this.src = getLocalSpiritImageDataUrl(n); };
+  });
+}
+
 function renderSpiritBar(party) {
   const bar = $('#spiritBar');
   if (!bar) return;
@@ -123,12 +139,12 @@ function renderSpiritBar(party) {
     const data = party[i] || null;
     const img = slotEl.querySelector('.spirit-bar-img');
     const empty = slotEl.querySelector('.spirit-bar-empty');
-    if (data && data.spiritImage) {
+    if (data) {
       slotEl.classList.add('has-spirit');
       if (img) {
-        img.src = data.spiritImage;
-        img.alt = data.spiritName || data.nickname || '';
-        img.onerror = function () { slotEl.classList.remove('has-spirit'); if (empty) empty.style.display = ''; };
+        img.src = getLocalSpiritImage(data.spiritNumber);
+        img.alt = data.spiritName || data.nickname || '妖灵' + (data.spiritNumber || 0);
+        img.onerror = function () { this.src = getLocalSpiritImageDataUrl(data.spiritNumber); };
       }
       if (empty) empty.style.display = 'none';
     } else {
@@ -146,6 +162,29 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// 妖灵1～151 图片：优先加载已生成的本地文件 /images/spirits/N.svg，否则用代码生成 data URL
+const spiritImageCache = {};
+function getLocalSpiritImage(number) {
+  const n = Math.max(1, Math.min(151, Math.floor(Number(number)) || 1));
+  if (spiritImageCache[n]) return spiritImageCache[n];
+  spiritImageCache[n] = '/images/spirits/' + n + '.svg';
+  return spiritImageCache[n];
+}
+function getLocalSpiritImageDataUrl(number) {
+  const n = Math.max(1, Math.min(151, Math.floor(Number(number)) || 1));
+  const label = '妖灵' + n;
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">' +
+    '<rect width="96" height="96" fill="#1a1a20" stroke="#2a2a35" stroke-width="2" rx="8"/>' +
+    '<text x="48" y="52" text-anchor="middle" fill="#e8e8ed" font-size="14" font-family="sans-serif">' + label + '</text></svg>';
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+
+// 先生成图片：妖灵1～151 在页面加载时全部预生成到缓存
+function preGenerateSpiritImages() {
+  for (let n = 1; n <= 151; n++) getLocalSpiritImage(n);
+}
+preGenerateSpiritImages();
+
 function updateUI() {
   const user = getUser();
   const token = getToken();
@@ -161,6 +200,7 @@ function updateUI() {
     if (heroActions) heroActions.classList.add('hidden');
     if (heroLoggedIn) { heroLoggedIn.classList.remove('hidden'); if (heroUsername) heroUsername.textContent = user.username; }
     if (homePage) homePage.classList.remove('hidden');
+    renderSpiritDex();
     loadCharacters();
     hideAuthOverlay();
   } else {

@@ -265,6 +265,21 @@
 
 ---
 
+### 2.7.6 获取单只玩家妖灵详情（游戏内详情面板）
+
+**GET /api/user/player-spirit/:id**
+
+- `:id`：玩家妖灵 ID（来自 GET /api/user/party 返回的 `party[].id`）
+- 仅可查询当前用户拥有的角色之妖灵
+
+**成功 (200)**：与管理端单只玩家妖灵详情结构一致，包含：图鉴信息（spiritNumber、spiritName、spiritTypes、spiritStats、spiritDescription、spiritImage）、昵称、等级/经验/性格、个体值 ivHp～ivSpeed、努力值 evHp～evSpeed、currentHp/status、持有物 heldItemId/heldItemName、技能 moves、friendship、isShiny、originalTrainer、capturedAt、capturedPlace、ballType、partySlot、ribbons、protons 等。
+
+**错误**：404 妖灵不存在；403 无权查看该妖灵
+
+**若客户端收到「接口返回 HTML 而非 JSON」**：说明请求未命中本接口，常见原因：① 服务器未部署含该路由的最新代码（需拉取并重启 Node）；② 反向代理（如 Nginx）未将 `/api/*` 转发到 Node，而是返回了前端页面。请确保部署后访问 `GET /api/user/player-spirit/某ID`（带有效 Bearer）返回 JSON。
+
+---
+
 ### 2.8 丢弃背包物品
 
 **DELETE /api/user/player-items/:id** 或 **POST /api/user/player-items/:id/discard**

@@ -286,6 +286,75 @@ router.get('/user/party', authMiddleware, async (req, res) => {
   }
 });
 
+// 获取当前用户某只玩家妖灵详情（完整个体信息，供游戏内详情面板）
+router.get('/user/player-spirit/:id', authMiddleware, async (req, res) => {
+  try {
+    const doc = await PlayerSpirit.findById(req.params.id)
+      .populate('character', 'name slot')
+      .populate('spirit')
+      .populate('heldItem', 'number name')
+      .populate('moves.skill', 'number name pp')
+      .lean();
+    if (!doc) return res.status(404).json({ error: '妖灵不存在' });
+    const characterId = doc.character?._id ?? doc.character;
+    const ch = await Character.findById(characterId).select('user').lean();
+    if (!ch || ch.user.toString() !== req.user.id) return res.status(403).json({ error: '无权查看该妖灵' });
+    const spirit = doc.spirit || {};
+    const list = (doc.moves || []).map((m) => ({
+      skillId: m.skill?._id?.toString(),
+      skillNumber: m.skill?.number,
+      skillName: m.skill?.name,
+      pp: m.pp,
+      maxPp: m.maxPp,
+    }));
+    res.json({
+      id: doc._id.toString(),
+      characterId: doc.character?._id?.toString(),
+      characterName: doc.character?.name,
+      characterSlot: doc.character?.slot,
+      spiritNumber: spirit.number,
+      spiritName: spirit.name,
+      spiritTypes: spirit.types || [],
+      spiritStats: spirit.stats || {},
+      spiritDescription: spirit.description || '',
+      spiritImage: spirit.image || '',
+      nickname: doc.nickname || '',
+      level: doc.level ?? 1,
+      exp: doc.exp ?? 0,
+      nature: doc.nature || 'Hardy',
+      ivHp: doc.ivHp ?? 0,
+      ivAtk: doc.ivAtk ?? 0,
+      ivDef: doc.ivDef ?? 0,
+      ivSpAtk: doc.ivSpAtk ?? 0,
+      ivSpDef: doc.ivSpDef ?? 0,
+      ivSpeed: doc.ivSpeed ?? 0,
+      evHp: doc.evHp ?? 0,
+      evAtk: doc.evAtk ?? 0,
+      evDef: doc.evDef ?? 0,
+      evSpAtk: doc.evSpAtk ?? 0,
+      evSpDef: doc.evSpDef ?? 0,
+      evSpeed: doc.evSpeed ?? 0,
+      currentHp: doc.currentHp ?? 1,
+      status: doc.status || 'none',
+      heldItemId: doc.heldItem?._id?.toString(),
+      heldItemName: doc.heldItem?.name,
+      moves: list,
+      friendship: doc.friendship ?? 0,
+      isShiny: !!doc.isShiny,
+      originalTrainer: doc.originalTrainer || '',
+      capturedAt: doc.capturedAt,
+      capturedPlace: doc.capturedPlace || '',
+      ballType: doc.ballType || '',
+      partySlot: doc.partySlot != null ? doc.partySlot : null,
+      ribbons: Array.isArray(doc.ribbons) ? doc.ribbons.filter((n) => n >= 1 && n <= 10) : [],
+      protons: Array.isArray(doc.protons) ? doc.protons.filter((n) => n >= 1 && n <= 10) : [],
+    });
+  } catch (err) {
+    console.error('Get user player-spirit error:', err.message);
+    res.status(500).json({ error: '获取妖灵详情失败' });
+  }
+});
+
 // 丢弃背包物品（用户只能丢弃自己角色的物品）
 // 支持 quantity 参数：DELETE ?quantity=N 或 POST body { quantity: N }，不传则丢弃全部
 router.delete('/user/player-items/:id', authMiddleware, async (req, res) => {

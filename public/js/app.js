@@ -93,7 +93,50 @@ async function loadCharacters() {
       if (!c.id) return `<div class="character-card character-empty">槽位 ${i + 1}：空</div>`;
       return `<div class="character-card"><span class="char-name">${escapeHtml(name)}</span><span class="char-stats">金币 ${gold} · RP ${rp}</span></div>`;
     }).join('');
+    const firstCharId = chars[0]?.id || null;
+    if (firstCharId) loadParty(firstCharId);
+    else renderSpiritBar([]);
   } catch (_) {}
+}
+
+async function loadParty(characterId) {
+  if (!characterId) return renderSpiritBar([]);
+  try {
+    const res = await fetch(API + '/user/party?characterId=' + encodeURIComponent(characterId), {
+      headers: { Authorization: 'Bearer ' + getToken() },
+    });
+    if (!res.ok) return renderSpiritBar([]);
+    const json = await res.json();
+    renderSpiritBar(json.party || []);
+  } catch (_) {
+    renderSpiritBar([]);
+  }
+}
+
+function renderSpiritBar(party) {
+  const bar = $('#spiritBar');
+  if (!bar) return;
+  const slots = bar.querySelectorAll('.spirit-bar-slot');
+  for (let i = 0; i < 6; i++) {
+    const slotEl = slots[i];
+    if (!slotEl) continue;
+    const data = party[i] || null;
+    const img = slotEl.querySelector('.spirit-bar-img');
+    const empty = slotEl.querySelector('.spirit-bar-empty');
+    if (data && data.spiritImage) {
+      slotEl.classList.add('has-spirit');
+      if (img) {
+        img.src = data.spiritImage;
+        img.alt = data.spiritName || data.nickname || '';
+        img.onerror = function () { slotEl.classList.remove('has-spirit'); if (empty) empty.style.display = ''; };
+      }
+      if (empty) empty.style.display = 'none';
+    } else {
+      slotEl.classList.remove('has-spirit');
+      if (img) { img.src = ''; img.alt = ''; }
+      if (empty) empty.style.display = '';
+    }
+  }
 }
 
 function escapeHtml(str) {

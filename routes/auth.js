@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Character = require('../models/Character');
 const PlayerItem = require('../models/PlayerItem');
+const PlayerSpirit = require('../models/PlayerSpirit');
 const AdminLog = require('../models/AdminLog');
 const { authMiddleware, JWT_SECRET } = require('../middleware/auth');
 const { validateUsername, validateEmail, validatePassword } = require('../utils/validation');
@@ -239,6 +240,49 @@ router.get('/user/player-items', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Get user player-items error:', err.message);
     res.status(500).json({ error: '获取背包失败' });
+  }
+});
+
+// 获取当前用户某角色的队伍（6 格，partySlot 0～5，含妖灵图片等）
+router.get('/user/party', authMiddleware, async (req, res) => {
+  try {
+    const { characterId } = req.query;
+    if (!characterId) return res.status(400).json({ error: '请提供 characterId' });
+    const character = await Character.findOne({ _id: characterId, user: req.user.id });
+    if (!character) return res.status(404).json({ error: '角色不存在或无权访问' });
+    const docs = await PlayerSpirit.find({
+      character: characterId,
+      partySlot: { $gte: 0, $lte: 5 },
+    })
+      .populate('spirit', 'number name image types')
+      .sort({ partySlot: 1 })
+      .lean();
+    const slotMap = {};
+    for (const p of docs) {
+      const slot = p.partySlot ?? 0;
+      if (slot >= 0 && slot <= 5) slotMap[slot] = p;
+    }
+    const party = [];
+    for (let i = 0; i < 6; i++) {
+      const p = slotMap[i];
+      if (!p) {
+        party.push(null);
+        continue;
+      }
+      party.push({
+        id: p._id.toString(),
+        spiritNumber: p.spirit?.number ?? 0,
+        spiritName: p.spirit?.name ?? '',
+        spiritImage: p.spirit?.image ?? '',
+        spiritTypes: p.spirit?.types ?? [],
+        level: p.level ?? 1,
+        nickname: p.nickname || '',
+      });
+    }
+    res.json({ party });
+  } catch (err) {
+    console.error('Get user party error:', err.message);
+    res.status(500).json({ error: '获取队伍失败' });
   }
 });
 

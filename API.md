@@ -241,6 +241,30 @@
 
 ---
 
+### 2.7.5 获取队伍（游戏内 SpiritBar）
+
+**GET /api/user/party**
+
+| 参数 | 必填 | 说明 |
+|------|------|------|
+| characterId | ✓ | 角色 ID（须为当前用户拥有的角色） |
+
+**成功 (200)**：
+```json
+{
+  "party": [
+    { "id": "玩家妖灵ID", "spiritNumber": 1, "spiritName": "皮卡丘", "spiritImage": "https://...", "spiritTypes": ["电"], "level": 5, "nickname": "" },
+    null,
+    ...
+  ]
+}
+```
+- `party`：长度为 6 的数组，对应队伍第 1～6 格；有妖灵时为对象（含 `spiritImage` 等），空位为 `null`。
+
+**错误**：400 请提供 characterId；404 角色不存在或无权访问
+
+---
+
 ### 2.8 丢弃背包物品
 
 **DELETE /api/user/player-items/:id** 或 **POST /api/user/player-items/:id/discard**
@@ -603,6 +627,7 @@
 | /api/user/characters | PUT | 批量更新角色 | Bearer |
 | /api/user/characters/:index | PUT | 更新单个角色 | Bearer |
 | /api/user/player-items | GET | 获取背包物品 | Bearer |
+| /api/user/party | GET | 获取角色队伍（6 格，含妖灵图片） | Bearer |
 | /api/user/player-items/:id | DELETE | 丢弃背包物品 | Bearer |
 | /api/admin/users | GET | 用户列表 | admin/ow |
 | /api/admin/users/:id/role | PUT | 修改用户角色 | ow |

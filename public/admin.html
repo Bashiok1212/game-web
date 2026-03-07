@@ -431,6 +431,7 @@
                 <th>性格</th>
                 <th>昵称</th>
                 <th>初训家</th>
+                <th>位置</th>
                 <th>当前HP</th>
                 <th>异色</th>
                 <th>获取时间</th>
@@ -536,6 +537,22 @@
                 <div class="stats-grid">
                   <div><label>捕获时间</label><input type="datetime-local" name="capturedAt"></div>
                   <div><label>捕获地点</label><input type="text" name="capturedPlace" maxlength="64" placeholder="例如 常青森林"></div>
+                </div>
+              </div>
+              <div class="form-row">
+                <label>位置（队伍位 / 箱子）</label>
+                <div class="stats-grid">
+                  <div><label>队伍位</label><select name="partySlot">
+                    <option value="">仓库</option>
+                    <option value="0">队伍 1</option>
+                    <option value="1">队伍 2</option>
+                    <option value="2">队伍 3</option>
+                    <option value="3">队伍 4</option>
+                    <option value="4">队伍 5</option>
+                    <option value="5">队伍 6</option>
+                  </select></div>
+                  <div><label>第几箱</label><input type="number" name="boxIndex" min="0" max="999" value="0"></div>
+                  <div><label>箱内格位</label><input type="number" name="slotInBox" min="0" max="999" value="0"></div>
                 </div>
               </div>
               <div class="form-row">

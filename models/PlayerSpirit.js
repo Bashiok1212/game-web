@@ -122,9 +122,29 @@ const playerSpiritSchema = new mongoose.Schema({
     trim: true,
     maxlength: 32,
   },
+
+  // 位置：队伍（0～5）或仓库（箱号+格位）
+  partySlot: {
+    type: Number,
+    default: null,
+    min: 0,
+    max: 5,
+  },
+  boxIndex: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  slotInBox: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
 });
 
 playerSpiritSchema.index({ character: 1, level: -1 });
+playerSpiritSchema.index({ character: 1, partySlot: 1 });
+playerSpiritSchema.index({ character: 1, boxIndex: 1, slotInBox: 1 });
 
 const PlayerSpirit = mongoose.model('PlayerSpirit', playerSpiritSchema);
 

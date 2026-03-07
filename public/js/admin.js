@@ -916,7 +916,7 @@ async function loadPlayerSpirits() {
     const { playerSpirits } = await res.json();
     if (!playerSpiritsTableBody) return;
     if (!playerSpirits || playerSpirits.length === 0) {
-      playerSpiritsTableBody.innerHTML = '<tr><td colspan="11" class="empty">暂无玩家妖灵</td></tr>';
+      playerSpiritsTableBody.innerHTML = '<tr><td colspan="12" class="empty">暂无玩家妖灵</td></tr>';
       return;
     }
     playerSpiritsTableBody.innerHTML = playerSpirits.map((p) => `
@@ -928,6 +928,7 @@ async function loadPlayerSpirits() {
         <td>${escapeHtml(p.nature || '')}</td>
         <td>${escapeHtml(p.nickname || '')}</td>
         <td>${escapeHtml(p.originalTrainer || '')}</td>
+        <td>${p.partySlot != null && p.partySlot >= 0 ? '队伍' + (p.partySlot + 1) : '箱' + (p.boxIndex ?? 0) + '格' + (p.slotInBox ?? 0)}</td>
         <td>${p.currentHp ?? '-'} </td>
         <td>${p.isShiny ? '★' : ''}</td>
         <td>${p.capturedAt ? new Date(p.capturedAt).toLocaleString() : ''}</td>
@@ -1127,6 +1128,9 @@ function fillPlayerSpiritDetailView(data) {
       } else setVal('capturedAt', '');
     } else setVal('capturedAt', '');
     setVal('capturedPlace', data.capturedPlace || '');
+    setVal('partySlot', data.partySlot != null && data.partySlot >= 0 && data.partySlot <= 5 ? String(data.partySlot) : '');
+    setVal('boxIndex', data.boxIndex ?? 0);
+    setVal('slotInBox', data.slotInBox ?? 0);
     const ballTypeVal = (data.ballType || '').trim();
     setVal('ballType', ballTypeVal);
     const ballSel = formPlayerSpiritDetail.querySelector('[name="ballType"]');
@@ -1249,6 +1253,12 @@ formPlayerSpiritDetail?.addEventListener('submit', async (e) => {
       return v ? new Date(v).toISOString() : undefined;
     })(),
     capturedPlace: txt('capturedPlace'),
+    partySlot: (() => {
+      const v = form.querySelector('[name="partySlot"]')?.value;
+      return v === '' || v == null ? '' : Number(v);
+    })(),
+    boxIndex: num('boxIndex'),
+    slotInBox: num('slotInBox'),
     heldItemId: txt('heldItemId'),
     ballType: txt('ballType'),
     currentHp: num('currentHp'),

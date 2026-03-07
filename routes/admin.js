@@ -973,6 +973,9 @@ router.get('/player-spirits', authMiddleware, adminMiddleware, async (req, res) 
       capturedAt: p.capturedAt,
       capturedPlace: p.capturedPlace || '',
       ballType: p.ballType || '',
+      partySlot: p.partySlot != null ? p.partySlot : null,
+      boxIndex: p.boxIndex ?? 0,
+      slotInBox: p.slotInBox ?? 0,
     }));
     res.json({ playerSpirits: list });
   } catch (err) {
@@ -1057,6 +1060,9 @@ router.post('/player-spirits', authMiddleware, adminMiddleware, async (req, res)
       originalTrainer: String(character.name || '').trim().slice(0, 32),
       capturedPlace: String(capturedPlace || '').trim().slice(0, 64),
       ballType: String(ballType || '').trim().slice(0, 32),
+      partySlot: null,
+      boxIndex: 0,
+      slotInBox: 0,
     });
 
     const op = await User.findById(req.user.id).select('username');
@@ -1135,6 +1141,9 @@ router.get('/player-spirits/:id', authMiddleware, adminMiddleware, async (req, r
       capturedAt: doc.capturedAt,
       capturedPlace: doc.capturedPlace || '',
       ballType: doc.ballType || '',
+      partySlot: doc.partySlot != null ? doc.partySlot : null,
+      boxIndex: doc.boxIndex ?? 0,
+      slotInBox: doc.slotInBox ?? 0,
     });
   } catch (err) {
     console.error('Admin player-spirit get error:', err.message);
@@ -1164,6 +1173,12 @@ router.put('/player-spirits/:id', authMiddleware, adminMiddleware, async (req, r
     }
     if (body.capturedPlace !== undefined) doc.capturedPlace = String(body.capturedPlace || '').trim().slice(0, 64);
     if (body.ballType !== undefined) doc.ballType = String(body.ballType || '').trim().slice(0, 32);
+    if (body.partySlot !== undefined) {
+      const v = body.partySlot;
+      doc.partySlot = (v === '' || v === null || v === undefined) ? null : clamp(Number(v), 0, 5);
+    }
+    if (body.boxIndex !== undefined) doc.boxIndex = Math.max(0, Math.min(999, Number(body.boxIndex) || 0));
+    if (body.slotInBox !== undefined) doc.slotInBox = Math.max(0, Math.min(999, Number(body.slotInBox) || 0));
     const ivKeys = ['ivHp', 'ivAtk', 'ivDef', 'ivSpAtk', 'ivSpDef', 'ivSpeed'];
     ivKeys.forEach((k) => {
       if (body[k] !== undefined) doc[k] = clamp(body[k], 0, 31);

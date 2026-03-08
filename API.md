@@ -272,7 +272,7 @@
 - `:id`：玩家妖灵 ID（来自 GET /api/user/party 返回的 `party[].id`）
 - 仅可查询当前用户拥有的角色之妖灵
 
-**成功 (200)**：与管理端单只玩家妖灵详情结构一致，包含：图鉴信息（spiritNumber、spiritName、spiritTypes、spiritStats、spiritDescription、spiritImage）、昵称、等级/经验/性格、个体值 ivHp～ivSpeed、努力值 evHp～evSpeed、currentHp/status、持有物 heldItemId/heldItemName、技能 moves、friendship、isShiny、originalTrainer、capturedAt、capturedPlace、ballType、partySlot、ribbons、protons 等。
+**成功 (200)**：与管理端单只玩家妖灵详情结构一致，包含：图鉴信息（spiritNumber、spiritName、spiritTypes、spiritStats、spiritDescription、spiritImage）、昵称、等级/经验/性格、个体值 ivHp～ivSpeed、努力值 evHp～evSpeed、currentHp/status、持有物 heldItemId/heldItemName、技能 moves、friendship、isShiny、originalTrainer、capturedAt、capturedPlace、ballType、partySlot、boxIndex、slotInBox、origin、ribbons、protons 等。
 
 **错误**：404 妖灵不存在；403 无权查看该妖灵
 

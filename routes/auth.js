@@ -346,6 +346,9 @@ router.get('/user/player-spirit/:id', authMiddleware, async (req, res) => {
       capturedPlace: doc.capturedPlace || '',
       ballType: doc.ballType || '',
       partySlot: doc.partySlot != null ? doc.partySlot : null,
+      boxIndex: doc.boxIndex ?? 0,
+      slotInBox: doc.slotInBox ?? 0,
+      origin: doc.origin || '',
       ribbons: Array.isArray(doc.ribbons) ? doc.ribbons.filter((n) => n >= 1 && n <= 10) : [],
       protons: Array.isArray(doc.protons) ? doc.protons.filter((n) => n >= 1 && n <= 10) : [],
     });

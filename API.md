@@ -158,9 +158,21 @@
 | `notes` | 备注 |
 | `cardStatus` | 卡状态（如：在库 / 已售） |
 | `image` | 图片（外链 URL 或 `data:image/...` Base64，勿过大） |
+| `extras` | 自定义字段键值对象，键与「字段定义」中的 `key` 对应 |
 | `set` / `quantity` | 兼容旧数据 |
 
-**成功**：`GET` 返回 `{ "cards": [ ... ] }`，单条对象含 `createdAt` / `updatedAt`。
+#### 自定义字段定义（均需 Bearer + `adminId`）
+
+独立页：`/ptcg-fields.html`。标识 `key` 创建后不可改（小写字母开头，仅 `a-z0-9_`）。
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/ptcg/field-defs` | 当前管理员的字段定义列表 |
+| POST | `/api/ptcg/field-defs` | 新建：`key`, `label`, `type`(text/textarea/number/select), `order`, `required`, `options`(select 时必填) |
+| PUT | `/api/ptcg/field-defs/:id` | 更新（**不可改** `key`） |
+| DELETE | `/api/ptcg/field-defs/:id` | 删除定义（卡牌上已存的 `extras` 键值仍保留在库中） |
+
+**成功**：`GET /field-defs` 返回 `{ "fieldDefs": [ ... ] }`；`GET /cards` 返回 `{ "cards": [ ... ] }`，单条含 `extras`、`createdAt` / `updatedAt`。
 
 ---
 

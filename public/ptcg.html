@@ -57,7 +57,7 @@
     <header class="cards-header cards-header-row">
       <div>
         <h1>PTCG 个人卡牌管理</h1>
-        <p class="cards-sub">卡牌数据保存在服务器数据库（MongoDB），编号自动生成；图片可填外链或本地上传（勿过大）。</p>
+        <p class="cards-sub">核心字段固定；扩展字段请在「编辑字段」页配置，保存后此处表单会自动出现对应输入框。</p>
       </div>
       <button type="button" id="btnPtcgLogout" class="btn btn-ghost btn-sm">退出登录</button>
     </header>
@@ -65,7 +65,7 @@
     <section class="cards-toolbar">
       <input type="search" id="cardSearch" class="cards-search" placeholder="搜索编号、名称、年份、语言、版本、稀有度、状态…" autocomplete="off">
       <div class="cards-actions">
-        <button type="button" id="btnFieldSettings" class="btn btn-secondary" title="配置显示字段与连续录入">字段 / 快捷录入</button>
+        <a href="ptcg-fields.html" class="btn btn-secondary">编辑字段</a>
         <button type="button" id="btnAddCard" class="btn btn-primary">添加卡牌</button>
         <button type="button" id="btnExport" class="btn btn-secondary">导出 JSON</button>
         <label class="btn btn-secondary btn-file">
@@ -81,38 +81,38 @@
         <p class="card-form-no" id="cardNoHint" aria-live="polite"></p>
         <p class="card-form-shortcuts" id="formShortcutsHint">提示：<kbd>Ctrl</kbd>+<kbd>Enter</kbd> 保存并继续下一张</p>
 
-        <div class="form-row" data-field="name">
+        <div class="form-row">
           <label>名称 <span class="req">*</span></label>
           <input type="text" id="fName" required maxlength="128" placeholder="卡牌名称">
         </div>
 
         <div class="form-row form-row-3">
-          <div class="form-cell" data-field="year">
+          <div class="form-cell">
             <label>年份</label>
             <input type="number" id="fYear" min="0" max="9999" step="1" placeholder="如 2024">
           </div>
-          <div class="form-cell" data-field="language">
+          <div class="form-cell">
             <label>语言</label>
             <input type="text" id="fLanguage" maxlength="32" placeholder="简中 / 日文 / 英文…">
           </div>
-          <div class="form-cell" data-field="version">
+          <div class="form-cell">
             <label>版本</label>
             <input type="text" id="fVersion" maxlength="128" placeholder="补充包 / 礼盒 / 版本名">
           </div>
         </div>
 
         <div class="form-row form-row-half">
-          <div class="form-cell" data-field="rarity">
+          <div class="form-cell">
             <label>稀有度</label>
             <input type="text" id="fRarity" maxlength="64" placeholder="如：AR / SAR / 闪">
           </div>
-          <div class="form-cell" data-field="purchasePrice">
+          <div class="form-cell">
             <label>购入价（元）</label>
             <input type="number" id="fPurchasePrice" min="0" step="0.01" placeholder="0">
           </div>
         </div>
 
-        <div class="graded-block" data-field="graded">
+        <div class="graded-block">
           <div class="form-row form-row-graded">
             <label class="label-inline">
               <input type="checkbox" id="fGraded"> 评级卡
@@ -131,11 +131,11 @@
         </div>
 
         <div class="form-row form-row-half">
-          <div class="form-cell" data-field="condition">
+          <div class="form-cell">
             <label>品相</label>
             <input type="text" id="fCondition" maxlength="64" placeholder="如：NM / 白边">
           </div>
-          <div class="form-cell" data-field="cardStatus">
+          <div class="form-cell">
             <label>卡状态</label>
             <select id="fCardStatus">
               <option value="">（未选）</option>
@@ -148,12 +148,12 @@
           </div>
         </div>
 
-        <div class="form-row" data-field="notes">
+        <div class="form-row">
           <label>备注</label>
           <textarea id="fNotes" rows="3" maxlength="2000" placeholder="其他说明"></textarea>
         </div>
 
-        <div class="form-row" data-field="image">
+        <div class="form-row">
           <label>图片</label>
           <input type="url" id="fImageUrl" maxlength="2000" placeholder="https:// 外链（推荐）或留空">
           <p class="form-hint">或上传本地图片（建议 &lt; 400KB，将转为 Base64 存库）</p>
@@ -163,50 +163,18 @@
           <button type="button" id="btnClearImage" class="btn btn-ghost btn-sm btn-clear-img hidden">清除图片</button>
         </div>
 
+        <div class="form-row form-row-extras-head">
+          <label>自定义字段</label>
+          <p class="form-hint">由 <a href="ptcg-fields.html">编辑字段</a> 页配置；无配置时此处为空。</p>
+        </div>
+        <div id="extrasFields" class="extras-fields-wrap"></div>
+
         <div class="form-btns">
           <button type="submit" class="btn btn-primary" id="btnSubmitCard">保存</button>
-          <button type="button" class="btn btn-primary btn-save-next" id="btnSaveNext" title="保存后清空名称并保留「连续录入」勾选的字段">保存并继续</button>
+          <button type="button" class="btn btn-primary btn-save-next" id="btnSaveNext" title="保存后清空名称与备注等，保留年份/语言等便于连录">保存并继续</button>
           <button type="button" id="btnCancelForm" class="btn btn-ghost">取消</button>
         </div>
       </form>
-    </div>
-
-    <!-- 字段管理 -->
-    <div id="fieldSettingsModal" class="ptcg-modal hidden" aria-hidden="true" role="dialog" aria-labelledby="fieldSettingsTitle">
-      <div class="ptcg-modal-backdrop" data-close-modal></div>
-      <div class="ptcg-modal-panel">
-        <h2 id="fieldSettingsTitle" class="ptcg-modal-title">字段与快捷录入</h2>
-        <p class="ptcg-modal-desc">隐藏不常用的字段可缩短表单；「连续录入保留」在点「保存并继续」后保留该字段，适合同一批次卡。</p>
-
-        <div class="ptcg-preset-row">
-          <span class="ptcg-preset-label">一键预设：</span>
-          <button type="button" class="btn btn-ghost btn-sm" id="presetMinimal">极速</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="presetBalanced">常用</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="presetAll">全字段</button>
-        </div>
-
-        <div class="ptcg-field-table-wrap">
-          <table class="ptcg-field-table" id="fieldSettingsTable">
-            <thead>
-              <tr>
-                <th>字段</th>
-                <th>显示</th>
-                <th title="保存并继续时保留">连续保留</th>
-              </tr>
-            </thead>
-            <tbody id="fieldSettingsBody"></tbody>
-          </table>
-        </div>
-
-        <label class="ptcg-check-row">
-          <input type="checkbox" id="prefCompactMode"> 紧凑大输入框（名称行更高，适合连录）
-        </label>
-
-        <div class="ptcg-modal-actions">
-          <button type="button" class="btn btn-primary" id="fieldSettingsSave">完成</button>
-          <button type="button" class="btn btn-ghost" data-close-modal>取消</button>
-        </div>
-      </div>
     </div>
 
     <section class="cards-list-section">

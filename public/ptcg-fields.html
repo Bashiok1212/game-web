@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>PTCG 自定义字段管理</title>
+  <link rel="stylesheet" href="css/cards.css">
+</head>
+<body>
+  <div id="ptcgAuth" class="ptcg-auth-panel">
+    <div class="ptcg-auth-box">
+      <div class="ptcg-auth-tabs">
+        <button type="button" class="ptcg-tab active" id="tabLogin" data-tab="login">登录</button>
+        <button type="button" class="ptcg-tab" id="tabRegister" data-tab="register">注册</button>
+      </div>
+      <div id="ptcgLoginPanel">
+        <h2 class="ptcg-auth-title">PTCG 管理登录</h2>
+        <p class="ptcg-auth-hint">与卡牌页共用同一登录；未登录无法管理字段。</p>
+        <form id="ptcgLoginForm" autocomplete="on">
+          <div class="form-row">
+            <label for="ptcgUser">用户名</label>
+            <input type="text" id="ptcgUser" name="username" autocomplete="username" required maxlength="32">
+          </div>
+          <div class="form-row">
+            <label for="ptcgPass">密码</label>
+            <input type="password" id="ptcgPass" name="password" autocomplete="current-password" required maxlength="128">
+          </div>
+          <p id="ptcgLoginErr" class="ptcg-login-err" role="alert"></p>
+          <button type="submit" class="btn btn-primary btn-block">登录</button>
+        </form>
+      </div>
+      <div id="ptcgRegisterPanel" class="hidden">
+        <h2 class="ptcg-auth-title">注册 PTCG 管理员</h2>
+        <p class="ptcg-auth-hint">首个账号可直接注册；之后需在服务器设置 <code>PTCG_REGISTER_SECRET</code>。</p>
+        <form id="ptcgRegisterForm" autocomplete="on">
+          <div class="form-row">
+            <label for="ptcgRegUser">用户名</label>
+            <input type="text" id="ptcgRegUser" maxlength="32" required>
+          </div>
+          <div class="form-row">
+            <label for="ptcgRegPass">密码</label>
+            <input type="password" id="ptcgRegPass" maxlength="128" required>
+          </div>
+          <div class="form-row">
+            <label for="ptcgRegSecret">注册密钥（可选）</label>
+            <input type="password" id="ptcgRegSecret" maxlength="128">
+          </div>
+          <p id="ptcgRegisterErr" class="ptcg-login-err" role="alert"></p>
+          <button type="submit" class="btn btn-primary btn-block">注册</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="fieldsApp" class="cards-app hidden">
+    <header class="cards-header cards-header-row">
+      <div>
+        <h1>自定义字段管理</h1>
+        <p class="cards-sub">在此<strong>新增 / 编辑 / 删除</strong>录入时要填的扩展字段；标识（key）创建后不可改。卡牌录入页会按排序自动出现对应输入框。</p>
+      </div>
+      <div class="cards-actions">
+        <a href="ptcg.html" class="btn btn-secondary">返回卡牌管理</a>
+        <button type="button" id="btnFieldsLogout" class="btn btn-ghost btn-sm">退出</button>
+      </div>
+    </header>
+
+    <section class="cards-toolbar">
+      <button type="button" id="btnAddFieldDef" class="btn btn-primary">新增字段</button>
+    </section>
+
+    <div id="fieldDefFormWrap" class="card-form-wrap hidden">
+      <form id="fieldDefForm" class="card-form">
+        <input type="hidden" id="fdEditId" value="">
+        <div class="form-row">
+          <label>显示名称 <span class="req">*</span></label>
+          <input type="text" id="fdLabel" required maxlength="64" placeholder="如：购入渠道">
+        </div>
+        <div class="form-row" id="fdKeyRow">
+          <label>标识（key）<span class="req">*</span></label>
+          <input type="text" id="fdKey" maxlength="32" pattern="[a-z][a-z0-9_]*" placeholder="英文小写+下划线，如 purchase_shop">
+          <p class="form-hint">仅新建时可填；保存后不可修改。</p>
+        </div>
+        <div class="form-row form-row-half">
+          <div>
+            <label>类型</label>
+            <select id="fdType">
+              <option value="text">单行文本</option>
+              <option value="textarea">多行文本</option>
+              <option value="number">数字</option>
+              <option value="select">下拉选择</option>
+            </select>
+          </div>
+          <div>
+            <label>排序（数字越小越靠前）</label>
+            <input type="number" id="fdOrder" step="1" value="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="label-inline">
+            <input type="checkbox" id="fdRequired"> 必填
+          </label>
+        </div>
+        <div class="form-row" id="fdOptionsRow">
+          <label>下拉选项（每行一项，或英文逗号分隔）</label>
+          <textarea id="fdOptions" rows="4" maxlength="4000" placeholder="选项A&#10;选项B"></textarea>
+        </div>
+        <div class="form-btns">
+          <button type="submit" class="btn btn-primary">保存</button>
+          <button type="button" id="btnFdCancel" class="btn btn-ghost">取消</button>
+        </div>
+      </form>
+    </div>
+
+    <section class="cards-list-section">
+      <p id="fdEmpty" class="cards-empty hidden">暂无自定义字段，点击「新增字段」添加。</p>
+      <table class="ptcg-field-def-list" id="fdTable">
+        <thead>
+          <tr>
+            <th>显示名</th>
+            <th>标识</th>
+            <th>类型</th>
+            <th>排序</th>
+            <th>必填</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="fdTableBody"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script src="js/ptcg-fields-app.js"></script>
+</body>
+</html>

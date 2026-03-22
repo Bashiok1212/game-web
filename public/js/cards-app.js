@@ -196,6 +196,17 @@
     });
   }
 
+  function extrasBlob(c) {
+    if (!c.extras || typeof c.extras !== 'object') return '';
+    var s = '';
+    for (var k in c.extras) {
+      if (Object.prototype.hasOwnProperty.call(c.extras, k)) {
+        s += ' ' + c.extras[k];
+      }
+    }
+    return s;
+  }
+
   function cardSearchBlob(c) {
     var parts = [
       c.cardNo,
@@ -213,6 +224,7 @@
       c.cardStatus,
       c.set,
       c.quantity,
+      extrasBlob(c),
     ];
     return parts
       .filter(function (x) {
@@ -249,6 +261,8 @@
     var fImagePreview = document.getElementById('fImagePreview');
     var btnClearImage = document.getElementById('btnClearImage');
 
+    var fieldDefsCache = [];
+
     if (!listEl || !form) return;
 
     function syncGradedUi() {
@@ -260,140 +274,100 @@
       fGraded.addEventListener('change', syncGradedUi);
     }
 
-    var PREFS_KEY = 'ptcg_field_prefs_v2';
-    var FIELD_DEFS = [
-      { id: 'year', label: '年份' },
-      { id: 'language', label: '语言' },
-      { id: 'version', label: '版本' },
-      { id: 'rarity', label: '稀有度' },
-      { id: 'purchasePrice', label: '购入价' },
-      { id: 'graded', label: '评级卡（含公司/编号）' },
-      { id: 'condition', label: '品相' },
-      { id: 'cardStatus', label: '卡状态' },
-      { id: 'notes', label: '备注', noSticky: true },
-      { id: 'image', label: '图片', noSticky: true },
-    ];
-    var DEFAULT_PREFS = {
-      visible: {
-        year: true,
-        language: true,
-        version: true,
-        rarity: true,
-        purchasePrice: true,
-        graded: true,
-        condition: true,
-        cardStatus: true,
-        notes: true,
-        image: true,
-      },
-      sticky: {
-        year: true,
-        language: true,
-        version: true,
-        rarity: false,
-        purchasePrice: true,
-        graded: false,
-        condition: false,
-        cardStatus: true,
-      },
-      compactMode: true,
-    };
-    var fieldSettingsModal = document.getElementById('fieldSettingsModal');
+    function fetchFieldDefs() {
+      return fetch('/api/ptcg/field-defs', { headers: authHeaders(), credentials: 'same-origin' })
+        .then(function (r) {
+          if (r.status === 401) {
+            setToken('');
+            showAuth();
+            throw new Error('unauthorized');
+          }
+          if (!r.ok) throw new Error('fielddefs');
+          return r.json();
+        })
+        .then(function (data) {
+          fieldDefsCache = data.fieldDefs || [];
+        });
+    }
 
-    function loadPrefs() {
-      var d = JSON.parse(JSON.stringify(DEFAULT_PREFS));
-      try {
-        var raw = localStorage.getItem(PREFS_KEY);
-        if (!raw) return d;
-        var o = JSON.parse(raw);
-        if (o.visible) Object.assign(d.visible, o.visible);
-        if (o.sticky) Object.assign(d.sticky, o.sticky);
-        if (typeof o.compactMode === 'boolean') d.compactMode = o.compactMode;
-      } catch (e) {}
-      return d;
+    function extrasContainer() {
+      return document.getElementById('extrasFields');
     }
-    function savePrefs(p) {
-      try {
-        localStorage.setItem(PREFS_KEY, JSON.stringify(p));
-      } catch (e) {}
-    }
-    function applyPresetMinimal() {
-      return {
-        visible: {
-          year: false,
-          language: true,
-          version: true,
-          rarity: true,
-          purchasePrice: true,
-          graded: false,
-          condition: true,
-          cardStatus: true,
-          notes: false,
-          image: false,
-        },
-        sticky: {
-          year: true,
-          language: true,
-          version: true,
-          rarity: false,
-          purchasePrice: true,
-          graded: false,
-          condition: false,
-          cardStatus: true,
-        },
-        compactMode: true,
-      };
-    }
-    function applyPresetBalanced() {
-      return {
-        visible: {
-          year: true,
-          language: true,
-          version: true,
-          rarity: true,
-          purchasePrice: true,
-          graded: true,
-          condition: true,
-          cardStatus: true,
-          notes: true,
-          image: false,
-        },
-        sticky: {
-          year: true,
-          language: true,
-          version: true,
-          rarity: false,
-          purchasePrice: true,
-          graded: false,
-          condition: false,
-          cardStatus: true,
-        },
-        compactMode: false,
-      };
-    }
-    function applyPresetAll() {
-      var p = JSON.parse(JSON.stringify(DEFAULT_PREFS));
-      FIELD_DEFS.forEach(function (def) {
-        p.visible[def.id] = true;
+
+    function renderExtrasForm(card) {
+      var wrap = extrasContainer();
+      if (!wrap) return;
+      wrap.innerHTML = '';
+      var ex = card && card.extras && typeof card.extras === 'object' ? card.extras : {};
+      fieldDefsCache.forEach(function (def) {
+        var val = ex[def.key] != null ? ex[def.key] : '';
+        var row = document.createElement('div');
+        row.className = 'form-row extra-field';
+        row.dataset.extraKey = def.key;
+        var lab = document.createElement('label');
+        lab.textContent = def.label;
+        if (def.required) {
+          var sp = document.createElement('span');
+          sp.className = 'req';
+          sp.textContent = ' *';
+          lab.appendChild(sp);
+        }
+        row.appendChild(lab);
+        var input;
+        if (def.type === 'textarea') {
+          input = document.createElement('textarea');
+          input.rows = 2;
+          input.maxLength = 2000;
+          input.className = 'extra-input';
+          input.value = val === null || val === undefined ? '' : String(val);
+        } else if (def.type === 'number') {
+          input = document.createElement('input');
+          input.type = 'number';
+          input.step = 'any';
+          input.className = 'extra-input';
+          input.value = val === null || val === undefined ? '' : String(val);
+        } else if (def.type === 'select') {
+          input = document.createElement('select');
+          input.className = 'extra-input';
+          var opt0 = document.createElement('option');
+          opt0.value = '';
+          opt0.textContent = '（请选择）';
+          input.appendChild(opt0);
+          (def.options || []).forEach(function (opt) {
+            var o = document.createElement('option');
+            o.value = opt;
+            o.textContent = opt;
+            if (String(val) === String(opt)) o.selected = true;
+            input.appendChild(o);
+          });
+        } else {
+          input = document.createElement('input');
+          input.type = 'text';
+          input.maxLength = 2000;
+          input.className = 'extra-input';
+          input.value = val === null || val === undefined ? '' : String(val);
+        }
+        input.name = 'extra_' + def.key;
+        row.appendChild(input);
+        wrap.appendChild(row);
       });
-      p.compactMode = false;
-      return p;
     }
-    function applyFieldVisibility() {
-      var prefs = loadPrefs();
-      document.querySelectorAll('[data-field]').forEach(function (el) {
-        var k = el.getAttribute('data-field');
-        if (k === 'name') return;
-        var show = prefs.visible[k] !== false;
-        el.classList.toggle('field-hidden', !show);
+
+    function collectExtrasFromDom() {
+      var out = {};
+      var wrap = extrasContainer();
+      if (!wrap) return out;
+      wrap.querySelectorAll('.extra-field').forEach(function (row) {
+        var k = row.dataset.extraKey;
+        var inp = row.querySelector('.extra-input');
+        if (!k || !inp) return;
+        out[k] = inp.value;
       });
-      form.classList.toggle('card-form--compact', !!prefs.compactMode);
-      syncGradedUi();
+      return out;
     }
+
     function collectPayload() {
-      var prefs = loadPrefs();
-      var gradedVisible = prefs.visible.graded !== false;
-      var graded = gradedVisible && fGraded.checked;
+      var graded = fGraded.checked;
       var imgVal = fImage && fImage.value ? fImage.value.trim() : '';
       if (!imgVal && fImageUrl) imgVal = fImageUrl.value.trim();
       return {
@@ -411,11 +385,11 @@
         cardStatus: fCardStatus.value,
         image: imgVal,
         quantity: 1,
+        extras: collectExtrasFromDom(),
       };
     }
+
     function resetFormAfterContinue() {
-      var prefs = loadPrefs();
-      var st = prefs.sticky || {};
       var S = {
         year: fYear.value,
         language: fLanguage.value,
@@ -424,35 +398,27 @@
         purchasePrice: fPurchasePrice.value,
         condition: fCondition.value,
         cardStatus: fCardStatus.value,
-        graded: fGraded.checked,
-        gc: fGradingCompany.value,
-        gn: fGradingNumber.value,
       };
       fName.value = '';
       fNotes.value = '';
       clearImageFields();
-      fYear.value = st.year ? S.year : '';
-      fLanguage.value = st.language ? S.language : '';
-      fVersion.value = st.version ? S.version : '';
-      fRarity.value = st.rarity ? S.rarity : '';
-      fPurchasePrice.value = st.purchasePrice ? S.purchasePrice : '';
-      fCondition.value = st.condition ? S.condition : '';
-      fCardStatus.value = st.cardStatus ? S.cardStatus : '';
-      if (st.graded) {
-        fGraded.checked = S.graded;
-        fGradingCompany.value = S.graded ? S.gc : '';
-        fGradingNumber.value = S.graded ? S.gn : '';
-      } else {
-        fGraded.checked = false;
-        fGradingCompany.value = '';
-        fGradingNumber.value = '';
-      }
+      fYear.value = S.year;
+      fLanguage.value = S.language;
+      fVersion.value = S.version;
+      fRarity.value = S.rarity;
+      fPurchasePrice.value = S.purchasePrice;
+      fCondition.value = S.condition;
+      fCardStatus.value = S.cardStatus;
+      fGraded.checked = false;
+      fGradingCompany.value = '';
+      fGradingNumber.value = '';
+      renderExtrasForm(null);
       editId.value = '';
       if (cardNoHint) cardNoHint.textContent = '编号将在保存后自动生成';
       syncGradedUi();
-      applyFieldVisibility();
       fName.focus();
     }
+
     function submitCard(continueNext) {
       var payload = collectPayload();
       if (!payload.name) return;
@@ -503,71 +469,6 @@
           if (err.message !== 'unauthorized') alert(err.message || '保存失败');
         });
     }
-    function openFieldModal() {
-      var prefs = loadPrefs();
-      var tbody = document.getElementById('fieldSettingsBody');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-      FIELD_DEFS.forEach(function (def) {
-        var vis = prefs.visible[def.id] !== false;
-        var stky = !def.noSticky && prefs.sticky[def.id] === true;
-        var tr = document.createElement('tr');
-        var td0 = document.createElement('td');
-        td0.textContent = def.label;
-        var td1 = document.createElement('td');
-        var cb1 = document.createElement('input');
-        cb1.type = 'checkbox';
-        cb1.className = 'fs-vis';
-        cb1.setAttribute('data-id', def.id);
-        cb1.checked = vis;
-        td1.appendChild(cb1);
-        var td2 = document.createElement('td');
-        if (def.noSticky) {
-          td2.textContent = '—';
-        } else {
-          var cb2 = document.createElement('input');
-          cb2.type = 'checkbox';
-          cb2.className = 'fs-sticky';
-          cb2.setAttribute('data-id', def.id);
-          cb2.checked = stky;
-          td2.appendChild(cb2);
-        }
-        tr.appendChild(td0);
-        tr.appendChild(td1);
-        tr.appendChild(td2);
-        tbody.appendChild(tr);
-      });
-      var pcm = document.getElementById('prefCompactMode');
-      if (pcm) pcm.checked = !!prefs.compactMode;
-      if (fieldSettingsModal) {
-        fieldSettingsModal.classList.remove('hidden');
-        fieldSettingsModal.setAttribute('aria-hidden', 'false');
-      }
-    }
-    function closeFieldModal() {
-      if (fieldSettingsModal) {
-        fieldSettingsModal.classList.add('hidden');
-        fieldSettingsModal.setAttribute('aria-hidden', 'true');
-      }
-    }
-    function saveFieldSettingsFromModal() {
-      var prefs = loadPrefs();
-      document.querySelectorAll('#fieldSettingsBody .fs-vis').forEach(function (cb) {
-        var id = cb.getAttribute('data-id');
-        prefs.visible[id] = cb.checked;
-      });
-      document.querySelectorAll('#fieldSettingsBody .fs-sticky').forEach(function (cb) {
-        var id = cb.getAttribute('data-id');
-        prefs.sticky[id] = cb.checked;
-      });
-      var pcm = document.getElementById('prefCompactMode');
-      if (pcm) prefs.compactMode = pcm.checked;
-      savePrefs(prefs);
-      applyFieldVisibility();
-      closeFieldModal();
-    }
-
-    applyFieldVisibility();
 
     function showImagePreview(src) {
       if (!fImagePreview) return;
@@ -737,6 +638,8 @@
         if (c.cardStatus) metaParts.push('状态：' + c.cardStatus);
         if (c.graded) metaParts.push('评级：' + (c.gradingCompany || '') + ' ' + (c.gradingNumber || ''));
         if (c.condition) metaParts.push('品相：' + c.condition);
+        var exs = extrasBlob(c).trim();
+        if (exs) metaParts.push('扩展：' + exs.slice(0, 120) + (exs.length > 120 ? '…' : ''));
         meta.textContent = metaParts.join(' · ');
         main.appendChild(title);
         main.appendChild(meta);
@@ -796,15 +699,16 @@
         }
       }
       syncGradedUi();
-      if (card) {
-        document.querySelectorAll('[data-field]').forEach(function (el) {
-          el.classList.remove('field-hidden');
+      fetchFieldDefs()
+        .then(function () {
+          renderExtrasForm(card);
+        })
+        .catch(function () {
+          renderExtrasForm(card);
+        })
+        .then(function () {
+          fName.focus();
         });
-        form.classList.remove('card-form--compact');
-      } else {
-        applyFieldVisibility();
-      }
-      fName.focus();
     }
 
     function closeForm() {
@@ -812,6 +716,7 @@
       form.reset();
       editId.value = '';
       clearImageFields();
+      renderExtrasForm(null);
       if (cardNoHint) cardNoHint.textContent = '';
       syncGradedUi();
     }
@@ -821,47 +726,10 @@
     });
     document.getElementById('btnCancelForm').addEventListener('click', closeForm);
 
-    var btnFieldSettings = document.getElementById('btnFieldSettings');
-    if (btnFieldSettings) {
-      btnFieldSettings.addEventListener('click', function () {
-        openFieldModal();
-      });
-    }
     var btnSaveNext = document.getElementById('btnSaveNext');
     if (btnSaveNext) {
       btnSaveNext.addEventListener('click', function () {
         submitCard(true);
-      });
-    }
-    if (fieldSettingsModal) {
-      fieldSettingsModal.querySelectorAll('[data-close-modal]').forEach(function (el) {
-        el.addEventListener('click', closeFieldModal);
-      });
-    }
-    var fieldSettingsSave = document.getElementById('fieldSettingsSave');
-    if (fieldSettingsSave) fieldSettingsSave.addEventListener('click', saveFieldSettingsFromModal);
-    var presetMinimal = document.getElementById('presetMinimal');
-    if (presetMinimal) {
-      presetMinimal.addEventListener('click', function () {
-        savePrefs(applyPresetMinimal());
-        applyFieldVisibility();
-        openFieldModal();
-      });
-    }
-    var presetBalanced = document.getElementById('presetBalanced');
-    if (presetBalanced) {
-      presetBalanced.addEventListener('click', function () {
-        savePrefs(applyPresetBalanced());
-        applyFieldVisibility();
-        openFieldModal();
-      });
-    }
-    var presetAll = document.getElementById('presetAll');
-    if (presetAll) {
-      presetAll.addEventListener('click', function () {
-        savePrefs(applyPresetAll());
-        applyFieldVisibility();
-        openFieldModal();
       });
     }
 
@@ -964,7 +832,10 @@
       reader.readAsText(file, 'UTF-8');
     });
 
-    fetchCards()
+    fetchFieldDefs()
+      .then(function () {
+        return fetchCards();
+      })
       .then(function () {
         return maybeMigrateLocal();
       })

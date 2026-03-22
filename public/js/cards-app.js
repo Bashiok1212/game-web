@@ -220,7 +220,6 @@
       c.notes,
       c.cardStatus,
       c.set,
-      c.quantity,
     ];
     return parts
       .filter(function (x) {
@@ -251,23 +250,6 @@
     var fImage = document.getElementById('fImage');
     var fImagePreview = document.getElementById('fImagePreview');
     var btnClearImage = document.getElementById('btnClearImage');
-    var fQuantity = document.getElementById('fQuantity');
-
-    var stockModal = document.getElementById('stockModal');
-    var stockForm = document.getElementById('stockForm');
-    var stockCardId = document.getElementById('stockCardId');
-    var stockType = document.getElementById('stockType');
-    var stockQty = document.getElementById('stockQty');
-    var stockNote = document.getElementById('stockNote');
-    var stockModalErr = document.getElementById('stockModalErr');
-    var stockModalCancel = document.getElementById('stockModalCancel');
-    var stockModalBackdrop = document.getElementById('stockModalBackdrop');
-    var stockLogModal = document.getElementById('stockLogModal');
-    var stockLogTbody = document.getElementById('stockLogTbody');
-    var stockLogEmpty = document.getElementById('stockLogEmpty');
-    var stockLogModalMeta = document.getElementById('stockLogModalMeta');
-    var stockLogModalBackdrop = document.getElementById('stockLogModalBackdrop');
-    var stockLogModalClose = document.getElementById('stockLogModalClose');
 
     var dropdownConfig = {};
     var tableWrap = document.getElementById('cardsTableWrap');
@@ -469,13 +451,6 @@
         notes: fNotes.value.trim(),
         cardStatus: fieldVal('fCardStatus'),
         image: imgVal,
-        quantity: (function () {
-          var el = fQuantity;
-          if (!el) return 1;
-          var n = parseInt(el.value, 10);
-          if (Number.isNaN(n) || n < 0) return 0;
-          return Math.min(9999999, n);
-        })(),
       };
     }
 
@@ -488,14 +463,12 @@
         purchasePrice: fPurchasePrice.value,
         condition: fieldVal('fCondition'),
         cardStatus: fieldVal('fCardStatus'),
-        quantity: fQuantity && fQuantity.value !== '' ? fQuantity.value : '1',
       };
       fName.value = '';
       fNotes.value = '';
       clearImageFields();
       fYear.value = S.year;
       fPurchasePrice.value = S.purchasePrice;
-      if (fQuantity) fQuantity.value = S.quantity;
       fGraded.checked = false;
       fGradingCompany.value = '';
       fGradingNumber.value = '';
@@ -654,7 +627,6 @@
             name: c.name,
             version: c.version || c.set || '',
             set: c.set || '',
-            quantity: c.quantity != null ? c.quantity : 1,
             condition: c.condition || '',
             notes: c.notes || '',
           };
@@ -755,18 +727,7 @@
 
         tr.appendChild(tdText(c.condition, ''));
         tr.appendChild(tdText(c.cardStatus, ''));
-        tr.appendChild(
-          tdText(c.quantity != null && c.quantity !== '' ? c.quantity : '0', 'cards-td-num')
-        );
         tr.appendChild(tdNotes(c.notes));
-
-        var tdStock = document.createElement('td');
-        tdStock.className = 'cards-td-stock';
-        tdStock.innerHTML =
-          '<button type="button" class="btn btn-secondary btn-sm" data-act="stock-in">入</button> ' +
-          '<button type="button" class="btn btn-secondary btn-sm" data-act="stock-out">出</button> ' +
-          '<button type="button" class="btn btn-ghost btn-sm" data-act="stock-log">流水</button>';
-        tr.appendChild(tdStock);
 
         var tdAct = document.createElement('td');
         tdAct.className = 'cards-td-actions';
@@ -790,12 +751,6 @@
         }
       }
       fName.value = card ? card.name || '' : '';
-      if (fQuantity) {
-        fQuantity.value =
-          card && card.quantity != null && card.quantity !== ''
-            ? String(card.quantity)
-            : '1';
-      }
       fYear.value = card && card.year != null ? card.year : '';
       fPurchasePrice.value =
         card && card.purchasePrice != null && card.purchasePrice !== ''
@@ -880,159 +835,6 @@
       }
     });
 
-    function openStockModal(card, presetType) {
-      if (!stockModal || !stockCardId || !stockType || !stockQty) return;
-      stockCardId.value = card.id;
-      stockType.value = presetType === 'out' ? 'out' : 'in';
-      stockQty.value = '1';
-      if (stockNote) stockNote.value = '';
-      if (stockModalErr) stockModalErr.textContent = '';
-      var meta = document.getElementById('stockModalMeta');
-      if (meta) {
-        var no = card.cardNo != null ? '#' + card.cardNo + ' ' : '';
-        var q = card.quantity != null && card.quantity !== '' ? card.quantity : 0;
-        meta.textContent = no + (card.name || '（未命名）') + ' · 当前库存 ' + q;
-      }
-      stockModal.classList.remove('hidden');
-      stockModal.setAttribute('aria-hidden', 'false');
-    }
-
-    function closeStockModal() {
-      if (!stockModal) return;
-      stockModal.classList.add('hidden');
-      stockModal.setAttribute('aria-hidden', 'true');
-    }
-
-    function openStockLogModal(card) {
-      if (!stockLogModal || !stockLogTbody) return;
-      if (stockLogModalMeta) {
-        var no = card.cardNo != null ? '#' + card.cardNo + ' ' : '';
-        stockLogModalMeta.textContent = no + (card.name || '');
-      }
-      stockLogTbody.innerHTML = '';
-      if (stockLogEmpty) {
-        stockLogEmpty.textContent = '暂无流水记录。';
-        stockLogEmpty.classList.add('hidden');
-      }
-      stockLogModal.classList.remove('hidden');
-      stockLogModal.setAttribute('aria-hidden', 'false');
-
-      fetch('/api/ptcg/cards/' + encodeURIComponent(card.id) + '/stock-logs?limit=100', {
-        headers: authHeaders(),
-        credentials: 'same-origin',
-      })
-        .then(function (r) {
-          if (r.status === 401) {
-            setToken('');
-            showAuth();
-            throw new Error('unauthorized');
-          }
-          if (!r.ok) throw new Error('load');
-          return r.json();
-        })
-        .then(function (data) {
-          var logs = (data && data.logs) || [];
-          if (logs.length === 0) {
-            if (stockLogEmpty) stockLogEmpty.classList.remove('hidden');
-            return;
-          }
-          logs.forEach(function (log) {
-            var tr = document.createElement('tr');
-            var t = log.createdAt || '';
-            try {
-              if (t) t = new Date(t).toLocaleString('zh-CN');
-            } catch (e) {}
-            tr.innerHTML =
-              '<td>' +
-              escapeHtml(t) +
-              '</td><td>' +
-              (log.type === 'out' ? '出库' : '入库') +
-              '</td><td class="cards-td-num">' +
-              log.quantity +
-              '</td><td class="cards-td-num">' +
-              log.balanceAfter +
-              '</td><td>' +
-              escapeHtml(log.note || '—') +
-              '</td>';
-            stockLogTbody.appendChild(tr);
-          });
-        })
-        .catch(function () {
-          if (stockLogEmpty) {
-            stockLogEmpty.textContent = '加载失败';
-            stockLogEmpty.classList.remove('hidden');
-          }
-        });
-    }
-
-    function escapeHtml(s) {
-      var d = document.createElement('div');
-      d.textContent = s;
-      return d.innerHTML;
-    }
-
-    function closeStockLogModal() {
-      if (!stockLogModal) return;
-      stockLogModal.classList.add('hidden');
-      stockLogModal.setAttribute('aria-hidden', 'true');
-    }
-
-    if (stockForm) {
-      stockForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-        if (stockModalErr) stockModalErr.textContent = '';
-        var cid = stockCardId ? stockCardId.value : '';
-        if (!cid) return;
-        var qty = parseInt(stockQty && stockQty.value, 10);
-        if (Number.isNaN(qty) || qty < 1) {
-          if (stockModalErr) stockModalErr.textContent = '请输入有效数量';
-          return;
-        }
-        var body = {
-          type: stockType && stockType.value === 'out' ? 'out' : 'in',
-          quantity: qty,
-          note: stockNote ? stockNote.value.trim() : '',
-        };
-        fetch('/api/ptcg/cards/' + encodeURIComponent(cid) + '/stock', {
-          method: 'POST',
-          headers: authHeaders(),
-          credentials: 'same-origin',
-          body: JSON.stringify(body),
-        })
-          .then(function (r) {
-            if (r.status === 401) {
-              setToken('');
-              showAuth();
-              throw new Error('unauthorized');
-            }
-            if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || '操作失败'); });
-            return r.json();
-          })
-          .then(function () {
-            closeStockModal();
-            return fetchCards();
-          })
-          .then(function () {
-            render();
-            var editing = editId && editId.value === cid;
-            if (editing && fQuantity) {
-              var c = cardsCache.find(function (x) { return x.id === cid; });
-              if (c && c.quantity != null) fQuantity.value = String(c.quantity);
-            }
-          })
-          .catch(function (err) {
-            if (err.message !== 'unauthorized' && stockModalErr) {
-              stockModalErr.textContent = err.message || '操作失败';
-            }
-          });
-      });
-    }
-
-    if (stockModalCancel) stockModalCancel.addEventListener('click', closeStockModal);
-    if (stockModalBackdrop) stockModalBackdrop.addEventListener('click', closeStockModal);
-    if (stockLogModalClose) stockLogModalClose.addEventListener('click', closeStockLogModal);
-    if (stockLogModalBackdrop) stockLogModalBackdrop.addEventListener('click', closeStockLogModal);
-
     listEl.addEventListener('click', function (e) {
       var btn = e.target.closest('button');
       if (!btn) return;
@@ -1041,9 +843,6 @@
       var id = row.dataset.id;
       var act = btn.getAttribute('data-act');
       var card = cardsCache.find(function (x) { return x.id === id; });
-      if (act === 'stock-in' && card) openStockModal(card, 'in');
-      if (act === 'stock-out' && card) openStockModal(card, 'out');
-      if (act === 'stock-log' && card) openStockLogModal(card);
       if (act === 'edit' && card) openForm(card);
       if (act === 'del' && card) {
         var label = card.cardNo != null ? '#' + card.cardNo + ' ' : '';

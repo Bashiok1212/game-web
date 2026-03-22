@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-/** PTCG 个人卡牌：编号 cardNo 按管理员自增；保留 set/quantity 兼容旧数据 */
+/** PTCG 个人卡牌：每条记录代表一张独立卡牌；编号 cardNo 按管理员自增 */
 const ptcgCardSchema = new mongoose.Schema(
   {
     admin: {
@@ -30,7 +30,6 @@ const ptcgCardSchema = new mongoose.Schema(
     image: { type: String, maxlength: 600000, default: '' },
     /** 兼容旧字段 */
     set: { type: String, trim: true, maxlength: 128, default: '' },
-    quantity: { type: Number, default: 1, min: 0 },
   },
   { timestamps: true }
 );

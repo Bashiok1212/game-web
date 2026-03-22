@@ -57,7 +57,7 @@
     <header class="cards-header cards-header-row cards-header--hero">
       <div>
         <h1>PTCG 个人卡牌管理</h1>
-        <p class="cards-sub">在「编辑字段」配置下拉；语言与版本联动时，请先选语言再选版本。</p>
+        <p class="cards-sub">每条记录对应<strong>一张独立卡牌</strong>；多张请添加多条。在「编辑字段」配置下拉；语言与版本联动时请先选语言再选版本。</p>
       </div>
       <button type="button" id="btnPtcgLogout" class="btn btn-ghost btn-sm">退出登录</button>
     </header>
@@ -83,16 +83,9 @@
 
         <section class="ptcg-form-section ptcg-form-section--inline">
           <h2 class="ptcg-form-section-title">基本信息</h2>
-          <div class="form-row form-row-half">
-            <div class="form-cell">
-              <label>名称 <span class="req">*</span></label>
-              <input type="text" id="fName" required maxlength="128" placeholder="卡牌名称">
-            </div>
-            <div class="form-cell">
-              <label>库存数量</label>
-              <input type="number" id="fQuantity" min="0" max="9999999" step="1" value="1" title="也可在列表用入库/出库调整">
-              <p class="form-hint">保存时写入；日常建议用列表「入/出」记流水。</p>
-            </div>
+          <div class="form-row">
+            <label>名称 <span class="req">*</span></label>
+            <input type="text" id="fName" required maxlength="128" placeholder="卡牌名称">
           </div>
         </section>
 
@@ -207,9 +200,7 @@
               <th scope="col">评级</th>
               <th scope="col">品相</th>
               <th scope="col">状态</th>
-              <th scope="col" class="cards-th-num">库存</th>
               <th scope="col">备注</th>
-              <th class="cards-th-stock" scope="col">出入库</th>
               <th class="cards-th-actions" scope="col">操作</th>
             </tr>
           </thead>
@@ -217,65 +208,6 @@
         </table>
       </div>
     </section>
-  </div>
-
-  <!-- 入库 / 出库 -->
-  <div id="stockModal" class="ptcg-modal hidden" aria-hidden="true">
-    <div class="ptcg-modal-backdrop" id="stockModalBackdrop"></div>
-    <div class="ptcg-modal-panel" role="dialog" aria-labelledby="stockModalTitle">
-      <h3 class="ptcg-modal-title" id="stockModalTitle">入库 / 出库</h3>
-      <p id="stockModalMeta" class="ptcg-modal-desc"></p>
-      <form id="stockForm">
-        <input type="hidden" id="stockCardId" value="">
-        <div class="form-row">
-          <label for="stockType">类型</label>
-          <select id="stockType" required>
-            <option value="in">入库（增加库存）</option>
-            <option value="out">出库（减少库存）</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label for="stockQty">数量 <span class="req">*</span></label>
-          <input type="number" id="stockQty" min="1" max="999999" step="1" value="1" required>
-        </div>
-        <div class="form-row">
-          <label for="stockNote">备注（可选）</label>
-          <input type="text" id="stockNote" maxlength="500" placeholder="如：购入、售出、寄存">
-        </div>
-        <p id="stockModalErr" class="ptcg-login-err" role="alert"></p>
-        <div class="ptcg-modal-actions">
-          <button type="submit" class="btn btn-primary">确认</button>
-          <button type="button" class="btn btn-ghost" id="stockModalCancel">取消</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- 库存流水 -->
-  <div id="stockLogModal" class="ptcg-modal hidden" aria-hidden="true">
-    <div class="ptcg-modal-backdrop" id="stockLogModalBackdrop"></div>
-    <div class="ptcg-modal-panel ptcg-modal-panel--wide" role="dialog" aria-labelledby="stockLogModalTitle">
-      <h3 class="ptcg-modal-title" id="stockLogModalTitle">库存流水</h3>
-      <p id="stockLogModalMeta" class="ptcg-modal-desc"></p>
-      <div class="stock-log-table-wrap">
-        <table class="stock-log-table" aria-label="库存流水">
-          <thead>
-            <tr>
-              <th>时间</th>
-              <th>类型</th>
-              <th class="cards-th-num">数量</th>
-              <th class="cards-th-num">结余</th>
-              <th>备注</th>
-            </tr>
-          </thead>
-          <tbody id="stockLogTbody"></tbody>
-        </table>
-      </div>
-      <p id="stockLogEmpty" class="form-hint hidden">暂无流水记录。</p>
-      <div class="ptcg-modal-actions">
-        <button type="button" class="btn btn-primary" id="stockLogModalClose">关闭</button>
-      </div>
-    </div>
   </div>
 
   <script src="js/cards-app.js"></script>

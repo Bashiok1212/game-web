@@ -31,7 +31,6 @@ function toClient(c) {
     cardStatus: c.cardStatus || '',
     image: c.image || '',
     set: c.set || '',
-    quantity: c.quantity != null ? c.quantity : 1,
     createdAt: iso(c.createdAt),
     updatedAt: iso(c.updatedAt),
   };
@@ -111,10 +110,6 @@ function normalizeCreate(body) {
     cardStatus: b.cardStatus != null ? String(b.cardStatus).slice(0, 32) : '',
     image,
     set: b.set != null ? String(b.set).slice(0, 128) : '',
-    quantity:
-      b.quantity !== undefined && b.quantity !== null && b.quantity !== ''
-        ? Math.max(0, parseInt(b.quantity, 10) || 0)
-        : 1,
   };
 }
 
@@ -221,7 +216,7 @@ router.put('/cards/:id', ptcgAuthMiddleware, async (req, res) => {
     delete update.name;
     const card = await PtcgCard.findOneAndUpdate(
       { _id: id, admin: req.ptcgAdminId },
-      { $set: { ...update, name: payload.name } },
+      { $set: { ...update, name: payload.name }, $unset: { quantity: '' } },
       { new: true, lean: true }
     );
     if (!card) return res.status(404).json({ error: '卡牌不存在' });
@@ -282,10 +277,6 @@ function itemToPayload(item) {
     cardStatus: b.cardStatus != null ? String(b.cardStatus).slice(0, 32) : '',
     image,
     set: b.set != null ? String(b.set).slice(0, 128) : '',
-    quantity:
-      b.quantity !== undefined && b.quantity !== null && b.quantity !== ''
-        ? Math.max(0, parseInt(b.quantity, 10) || 0)
-        : 1,
   };
 }
 

@@ -260,6 +260,315 @@
       fGraded.addEventListener('change', syncGradedUi);
     }
 
+    var PREFS_KEY = 'ptcg_field_prefs_v2';
+    var FIELD_DEFS = [
+      { id: 'year', label: '年份' },
+      { id: 'language', label: '语言' },
+      { id: 'version', label: '版本' },
+      { id: 'rarity', label: '稀有度' },
+      { id: 'purchasePrice', label: '购入价' },
+      { id: 'graded', label: '评级卡（含公司/编号）' },
+      { id: 'condition', label: '品相' },
+      { id: 'cardStatus', label: '卡状态' },
+      { id: 'notes', label: '备注', noSticky: true },
+      { id: 'image', label: '图片', noSticky: true },
+    ];
+    var DEFAULT_PREFS = {
+      visible: {
+        year: true,
+        language: true,
+        version: true,
+        rarity: true,
+        purchasePrice: true,
+        graded: true,
+        condition: true,
+        cardStatus: true,
+        notes: true,
+        image: true,
+      },
+      sticky: {
+        year: true,
+        language: true,
+        version: true,
+        rarity: false,
+        purchasePrice: true,
+        graded: false,
+        condition: false,
+        cardStatus: true,
+      },
+      compactMode: true,
+    };
+    var fieldSettingsModal = document.getElementById('fieldSettingsModal');
+
+    function loadPrefs() {
+      var d = JSON.parse(JSON.stringify(DEFAULT_PREFS));
+      try {
+        var raw = localStorage.getItem(PREFS_KEY);
+        if (!raw) return d;
+        var o = JSON.parse(raw);
+        if (o.visible) Object.assign(d.visible, o.visible);
+        if (o.sticky) Object.assign(d.sticky, o.sticky);
+        if (typeof o.compactMode === 'boolean') d.compactMode = o.compactMode;
+      } catch (e) {}
+      return d;
+    }
+    function savePrefs(p) {
+      try {
+        localStorage.setItem(PREFS_KEY, JSON.stringify(p));
+      } catch (e) {}
+    }
+    function applyPresetMinimal() {
+      return {
+        visible: {
+          year: false,
+          language: true,
+          version: true,
+          rarity: true,
+          purchasePrice: true,
+          graded: false,
+          condition: true,
+          cardStatus: true,
+          notes: false,
+          image: false,
+        },
+        sticky: {
+          year: true,
+          language: true,
+          version: true,
+          rarity: false,
+          purchasePrice: true,
+          graded: false,
+          condition: false,
+          cardStatus: true,
+        },
+        compactMode: true,
+      };
+    }
+    function applyPresetBalanced() {
+      return {
+        visible: {
+          year: true,
+          language: true,
+          version: true,
+          rarity: true,
+          purchasePrice: true,
+          graded: true,
+          condition: true,
+          cardStatus: true,
+          notes: true,
+          image: false,
+        },
+        sticky: {
+          year: true,
+          language: true,
+          version: true,
+          rarity: false,
+          purchasePrice: true,
+          graded: false,
+          condition: false,
+          cardStatus: true,
+        },
+        compactMode: false,
+      };
+    }
+    function applyPresetAll() {
+      var p = JSON.parse(JSON.stringify(DEFAULT_PREFS));
+      FIELD_DEFS.forEach(function (def) {
+        p.visible[def.id] = true;
+      });
+      p.compactMode = false;
+      return p;
+    }
+    function applyFieldVisibility() {
+      var prefs = loadPrefs();
+      document.querySelectorAll('[data-field]').forEach(function (el) {
+        var k = el.getAttribute('data-field');
+        if (k === 'name') return;
+        var show = prefs.visible[k] !== false;
+        el.classList.toggle('field-hidden', !show);
+      });
+      form.classList.toggle('card-form--compact', !!prefs.compactMode);
+      syncGradedUi();
+    }
+    function collectPayload() {
+      var prefs = loadPrefs();
+      var gradedVisible = prefs.visible.graded !== false;
+      var graded = gradedVisible && fGraded.checked;
+      var imgVal = fImage && fImage.value ? fImage.value.trim() : '';
+      if (!imgVal && fImageUrl) imgVal = fImageUrl.value.trim();
+      return {
+        name: fName.value.trim(),
+        year: fYear.value === '' ? '' : fYear.value,
+        language: fLanguage.value.trim(),
+        version: fVersion.value.trim(),
+        rarity: fRarity.value.trim(),
+        purchasePrice: fPurchasePrice.value === '' ? '' : fPurchasePrice.value,
+        graded: graded,
+        gradingCompany: graded ? fGradingCompany.value.trim() : '',
+        gradingNumber: graded ? fGradingNumber.value.trim() : '',
+        condition: fCondition.value.trim(),
+        notes: fNotes.value.trim(),
+        cardStatus: fCardStatus.value,
+        image: imgVal,
+        quantity: 1,
+      };
+    }
+    function resetFormAfterContinue() {
+      var prefs = loadPrefs();
+      var st = prefs.sticky || {};
+      var S = {
+        year: fYear.value,
+        language: fLanguage.value,
+        version: fVersion.value,
+        rarity: fRarity.value,
+        purchasePrice: fPurchasePrice.value,
+        condition: fCondition.value,
+        cardStatus: fCardStatus.value,
+        graded: fGraded.checked,
+        gc: fGradingCompany.value,
+        gn: fGradingNumber.value,
+      };
+      fName.value = '';
+      fNotes.value = '';
+      clearImageFields();
+      fYear.value = st.year ? S.year : '';
+      fLanguage.value = st.language ? S.language : '';
+      fVersion.value = st.version ? S.version : '';
+      fRarity.value = st.rarity ? S.rarity : '';
+      fPurchasePrice.value = st.purchasePrice ? S.purchasePrice : '';
+      fCondition.value = st.condition ? S.condition : '';
+      fCardStatus.value = st.cardStatus ? S.cardStatus : '';
+      if (st.graded) {
+        fGraded.checked = S.graded;
+        fGradingCompany.value = S.graded ? S.gc : '';
+        fGradingNumber.value = S.graded ? S.gn : '';
+      } else {
+        fGraded.checked = false;
+        fGradingCompany.value = '';
+        fGradingNumber.value = '';
+      }
+      editId.value = '';
+      if (cardNoHint) cardNoHint.textContent = '编号将在保存后自动生成';
+      syncGradedUi();
+      applyFieldVisibility();
+      fName.focus();
+    }
+    function submitCard(continueNext) {
+      var payload = collectPayload();
+      if (!payload.name) return;
+      if (payload.graded) {
+        if (!payload.gradingCompany) {
+          alert('请填写评级公司');
+          return;
+        }
+        if (!payload.gradingNumber) {
+          alert('请填写评级编号');
+          return;
+        }
+      }
+      var id = editId.value;
+      var url = '/api/ptcg/cards';
+      var method = 'POST';
+      if (id) {
+        url = '/api/ptcg/cards/' + encodeURIComponent(id);
+        method = 'PUT';
+      }
+      fetch(url, {
+        method: method,
+        headers: authHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      })
+        .then(function (r) {
+          if (r.status === 401) {
+            setToken('');
+            showAuth();
+            throw new Error('unauthorized');
+          }
+          if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'save'); });
+          return r.json();
+        })
+        .then(function () {
+          return fetchCards();
+        })
+        .then(function () {
+          if (continueNext) {
+            resetFormAfterContinue();
+          } else {
+            closeForm();
+          }
+          render();
+        })
+        .catch(function (err) {
+          if (err.message !== 'unauthorized') alert(err.message || '保存失败');
+        });
+    }
+    function openFieldModal() {
+      var prefs = loadPrefs();
+      var tbody = document.getElementById('fieldSettingsBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      FIELD_DEFS.forEach(function (def) {
+        var vis = prefs.visible[def.id] !== false;
+        var stky = !def.noSticky && prefs.sticky[def.id] === true;
+        var tr = document.createElement('tr');
+        var td0 = document.createElement('td');
+        td0.textContent = def.label;
+        var td1 = document.createElement('td');
+        var cb1 = document.createElement('input');
+        cb1.type = 'checkbox';
+        cb1.className = 'fs-vis';
+        cb1.setAttribute('data-id', def.id);
+        cb1.checked = vis;
+        td1.appendChild(cb1);
+        var td2 = document.createElement('td');
+        if (def.noSticky) {
+          td2.textContent = '—';
+        } else {
+          var cb2 = document.createElement('input');
+          cb2.type = 'checkbox';
+          cb2.className = 'fs-sticky';
+          cb2.setAttribute('data-id', def.id);
+          cb2.checked = stky;
+          td2.appendChild(cb2);
+        }
+        tr.appendChild(td0);
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tbody.appendChild(tr);
+      });
+      var pcm = document.getElementById('prefCompactMode');
+      if (pcm) pcm.checked = !!prefs.compactMode;
+      if (fieldSettingsModal) {
+        fieldSettingsModal.classList.remove('hidden');
+        fieldSettingsModal.setAttribute('aria-hidden', 'false');
+      }
+    }
+    function closeFieldModal() {
+      if (fieldSettingsModal) {
+        fieldSettingsModal.classList.add('hidden');
+        fieldSettingsModal.setAttribute('aria-hidden', 'true');
+      }
+    }
+    function saveFieldSettingsFromModal() {
+      var prefs = loadPrefs();
+      document.querySelectorAll('#fieldSettingsBody .fs-vis').forEach(function (cb) {
+        var id = cb.getAttribute('data-id');
+        prefs.visible[id] = cb.checked;
+      });
+      document.querySelectorAll('#fieldSettingsBody .fs-sticky').forEach(function (cb) {
+        var id = cb.getAttribute('data-id');
+        prefs.sticky[id] = cb.checked;
+      });
+      var pcm = document.getElementById('prefCompactMode');
+      if (pcm) prefs.compactMode = pcm.checked;
+      savePrefs(prefs);
+      applyFieldVisibility();
+      closeFieldModal();
+    }
+
+    applyFieldVisibility();
+
     function showImagePreview(src) {
       if (!fImagePreview) return;
       if (!src) {
@@ -487,6 +796,14 @@
         }
       }
       syncGradedUi();
+      if (card) {
+        document.querySelectorAll('[data-field]').forEach(function (el) {
+          el.classList.remove('field-hidden');
+        });
+        form.classList.remove('card-form--compact');
+      } else {
+        applyFieldVisibility();
+      }
       fName.focus();
     }
 
@@ -504,73 +821,60 @@
     });
     document.getElementById('btnCancelForm').addEventListener('click', closeForm);
 
+    var btnFieldSettings = document.getElementById('btnFieldSettings');
+    if (btnFieldSettings) {
+      btnFieldSettings.addEventListener('click', function () {
+        openFieldModal();
+      });
+    }
+    var btnSaveNext = document.getElementById('btnSaveNext');
+    if (btnSaveNext) {
+      btnSaveNext.addEventListener('click', function () {
+        submitCard(true);
+      });
+    }
+    if (fieldSettingsModal) {
+      fieldSettingsModal.querySelectorAll('[data-close-modal]').forEach(function (el) {
+        el.addEventListener('click', closeFieldModal);
+      });
+    }
+    var fieldSettingsSave = document.getElementById('fieldSettingsSave');
+    if (fieldSettingsSave) fieldSettingsSave.addEventListener('click', saveFieldSettingsFromModal);
+    var presetMinimal = document.getElementById('presetMinimal');
+    if (presetMinimal) {
+      presetMinimal.addEventListener('click', function () {
+        savePrefs(applyPresetMinimal());
+        applyFieldVisibility();
+        openFieldModal();
+      });
+    }
+    var presetBalanced = document.getElementById('presetBalanced');
+    if (presetBalanced) {
+      presetBalanced.addEventListener('click', function () {
+        savePrefs(applyPresetBalanced());
+        applyFieldVisibility();
+        openFieldModal();
+      });
+    }
+    var presetAll = document.getElementById('presetAll');
+    if (presetAll) {
+      presetAll.addEventListener('click', function () {
+        savePrefs(applyPresetAll());
+        applyFieldVisibility();
+        openFieldModal();
+      });
+    }
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      var id = editId.value;
-      var imgVal = (fImage && fImage.value) ? fImage.value.trim() : '';
-      if (!imgVal && fImageUrl) imgVal = fImageUrl.value.trim();
-
-      var payload = {
-        name: fName.value.trim(),
-        year: fYear.value === '' ? '' : fYear.value,
-        language: fLanguage.value.trim(),
-        version: fVersion.value.trim(),
-        rarity: fRarity.value.trim(),
-        purchasePrice: fPurchasePrice.value === '' ? '' : fPurchasePrice.value,
-        graded: fGraded.checked,
-        gradingCompany: fGradingCompany.value.trim(),
-        gradingNumber: fGradingNumber.value.trim(),
-        condition: fCondition.value.trim(),
-        notes: fNotes.value.trim(),
-        cardStatus: fCardStatus.value,
-        image: imgVal,
-        quantity: 1,
-      };
-
-      if (!payload.name) return;
-      if (payload.graded) {
-        if (!payload.gradingCompany) {
-          alert('请填写评级公司');
-          return;
-        }
-        if (!payload.gradingNumber) {
-          alert('请填写评级编号');
-          return;
-        }
+      submitCard(false);
+    });
+    form.addEventListener('keydown', function (e) {
+      if (e.ctrlKey && (e.key === 'Enter' || e.keyCode === 13)) {
+        if (e.target && e.target.tagName === 'TEXTAREA') return;
+        e.preventDefault();
+        submitCard(true);
       }
-
-      var url = '/api/ptcg/cards';
-      var method = 'POST';
-      if (id) {
-        url = '/api/ptcg/cards/' + encodeURIComponent(id);
-        method = 'PUT';
-      }
-
-      fetch(url, {
-        method: method,
-        headers: authHeaders(),
-        credentials: 'same-origin',
-        body: JSON.stringify(payload),
-      })
-        .then(function (r) {
-          if (r.status === 401) {
-            setToken('');
-            showAuth();
-            throw new Error('unauthorized');
-          }
-          if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'save'); });
-          return r.json();
-        })
-        .then(function () {
-          return fetchCards();
-        })
-        .then(function () {
-          closeForm();
-          render();
-        })
-        .catch(function (err) {
-          if (err.message !== 'unauthorized') alert(err.message || '保存失败');
-        });
     });
 
     listEl.addEventListener('click', function (e) {

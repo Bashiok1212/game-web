@@ -572,3 +572,246 @@ body {
   padding: 0.25rem 0.5rem;
   font-size: 0.8rem;
 }
+
+/* —— 视觉优化：页头、工具栏、表单分区 —— */
+.cards-header--hero {
+  padding: 1rem 1.1rem 1.15rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--surface) 0%, color-mix(in srgb, var(--primary) 8%, var(--surface)) 100%);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.cards-toolbar--elevated {
+  padding: 0.65rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.card-form-wrap--panel {
+  padding: 1.15rem 1.15rem 1.25rem;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07);
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+.card-form .ptcg-form-section {
+  margin-bottom: 1.15rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.card-form .ptcg-form-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0;
+}
+
+.ptcg-form-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+}
+
+.ptcg-form-section-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: -0.15rem 0 0.6rem;
+  line-height: 1.45;
+}
+
+.ptcg-form-section--accent {
+  padding: 0.75rem 0.85rem;
+  margin-left: -0.25rem;
+  margin-right: -0.25rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 6%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
+}
+
+.ptcg-form-section--accent .ptcg-form-section-title {
+  color: color-mix(in srgb, var(--primary) 70%, var(--text-muted));
+}
+
+.form-row-lang-ver .form-cell label {
+  font-weight: 500;
+}
+
+.card-item {
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.card-item:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
+}
+
+.cards-list-section {
+  margin-top: 0.5rem;
+}
+
+/* 编辑字段页 */
+.fields-form .ptcg-form-section {
+  margin-bottom: 1.35rem;
+}
+
+.fields-form .ptcg-form-section {
+  padding: 1rem 1rem 1.1rem;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.04);
+}
+
+.fields-form .ptcg-form-section--accent {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 7%, var(--surface)) 0%, var(--surface) 100%);
+  border-color: color-mix(in srgb, var(--primary) 22%, var(--border));
+}
+
+.fields-form .ptcg-form-section-title {
+  font-size: 0.95rem;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+}
+
+.fields-form .ptcg-form-section-hint {
+  font-size: 0.8rem;
+}
+
+.lang-version-pairs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.lang-version-row {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 0.65rem 0.75rem;
+}
+
+.lang-version-row-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.lang-version-field {
+  flex: 0 0 7rem;
+  min-width: 5.5rem;
+}
+
+.lang-version-field--grow {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.lang-version-field label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
+.lang-version-input-lang,
+.lang-version-ta-ver {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.lang-version-ta-ver {
+  resize: vertical;
+  min-height: 88px;
+  font-family: inherit;
+}
+
+.lang-version-remove {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin-top: 1.65rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.btn-add-lang {
+  margin-bottom: 0.75rem;
+}
+
+.ptcg-details-legacy {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px dashed var(--border);
+  background: color-mix(in srgb, var(--bg) 80%, var(--surface));
+}
+
+.ptcg-details-legacy summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.ptcg-details-legacy textarea {
+  width: 100%;
+  margin-top: 0.5rem;
+  box-sizing: border-box;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.fields-form-grid .form-cell textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.ptcg-textarea-tall {
+  min-height: 120px;
+}
+
+.fd-save-msg {
+  min-height: 1.35rem;
+  font-size: 0.88rem;
+  margin-top: 0.5rem;
+}
+
+.fd-save-msg--ok {
+  color: var(--success, #2d7a4a);
+}
+
+.fd-save-msg--err {
+  color: var(--error);
+}
+
+/* color-mix 不支持时的降级 */
+@supports not (background: color-mix(in srgb, red, blue)) {
+  .cards-header--hero {
+    background: var(--surface);
+  }
+  .ptcg-form-section--accent {
+    background: var(--bg);
+  }
+}

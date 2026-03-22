@@ -162,13 +162,13 @@
 
 #### 现有字段下拉配置（均需 Bearer + `adminId`）
 
-独立页：`/ptcg-fields.html`。为固定五个键配置选项（每行一项）：`language`、`version`、`rarity`、`condition`、`cardStatus`。某键**未保存过**时，合并接口对该键返回空数组（卡状态除外，见下）；**保存为空数组**表示该字段在录入页用手输框而非下拉。
+独立页：`/ptcg-fields.html`。为 `language`、`rarity`、`condition`、`cardStatus` 配置选项（每行一项）；**版本**支持 **`versionByLanguage`**：`{ "简中": ["朱紫","剑盾"], "日文": [...] }`，每种语言独立版本列表。另保留 **`version`** 字符串数组作**全局兜底**（未配置 `versionByLanguage` 或旧数据时使用）。某键**未保存过**时，合并接口对该键返回空数组（卡状态除外）；**保存为空数组**表示该字段在录入页用手输。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/ptcg/field-dropdowns` | 合并默认值后的下拉（卡牌录入页用）。`cardStatus` 未在库中配置键时使用服务端默认列表；库中 `cardStatus: []` 时该字段为手输 |
-| GET | `/api/ptcg/field-dropdowns?raw=1` | 仅已保存的键与数组（编辑页用） |
-| PUT | `/api/ptcg/field-dropdowns` | body：`{ "dropdowns": { "language": ["简中","日文"], ... } }` |
+| GET | `/api/ptcg/field-dropdowns` | 合并默认值；含 `version`、`versionByLanguage` |
+| GET | `/api/ptcg/field-dropdowns?raw=1` | 仅已保存的键（编辑页用） |
+| PUT | `/api/ptcg/field-dropdowns` | body：`{ "dropdowns": { "language": [...], "version": [...], "versionByLanguage": { ... }, ... } }` |
 
 **成功**：`GET /field-dropdowns` 返回 `{ "dropdowns": { ... }, "fieldKeys": [ ... ] }`；`GET /cards` 返回 `{ "cards": [ ... ] }`，单条含 `createdAt` / `updatedAt`。
 

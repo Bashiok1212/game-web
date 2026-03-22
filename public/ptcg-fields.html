@@ -56,8 +56,8 @@
   <div id="fieldsApp" class="cards-app hidden">
     <header class="cards-header cards-header-row">
       <div>
-        <h1>编辑字段（下拉选项）</h1>
-        <p class="cards-sub">为<strong>现有录入项</strong>配置下拉框：每行一个选项。某字段<strong>留空</strong>表示该字段仍为<strong>手输文本</strong>。卡状态未保存过时，卡牌页会使用内置默认下拉。</p>
+        <h1>编辑字段</h1>
+        <p class="cards-sub">为固定字段配置下拉选项。语言与版本按<strong>语言分栏</strong>：每种语言单独维护版本列表。</p>
       </div>
       <div class="cards-actions">
         <a href="ptcg.html" class="btn btn-secondary">返回卡牌管理</a>
@@ -65,32 +65,46 @@
       </div>
     </header>
 
-    <form id="dropdownForm" class="card-form-wrap">
-      <div class="form-row">
-        <label>卡状态</label>
-        <textarea id="taCardStatus" rows="5" maxlength="8000" placeholder="在库&#10;已售&#10;出借"></textarea>
-        <p class="form-hint">留空则卡牌页使用系统默认选项；若只填「其他」等也可完全自定义。</p>
-      </div>
-      <div class="form-row">
-        <label>语言</label>
-        <textarea id="taLanguage" rows="4" maxlength="8000" placeholder="简中&#10;日文&#10;英文"></textarea>
-      </div>
-      <div class="form-row">
-        <label>版本</label>
-        <textarea id="taVersion" rows="4" maxlength="8000" placeholder="朱紫&#10;剑盾"></textarea>
-      </div>
-      <div class="form-row">
-        <label>稀有度</label>
-        <textarea id="taRarity" rows="4" maxlength="8000" placeholder="AR&#10;SAR"></textarea>
-      </div>
-      <div class="form-row">
-        <label>品相</label>
-        <textarea id="taCondition" rows="4" maxlength="8000" placeholder="NM&#10;LP"></textarea>
-      </div>
+    <form id="dropdownForm" class="card-form-wrap card-form fields-form">
+      <section class="ptcg-form-section">
+        <h2 class="ptcg-form-section-title">卡状态</h2>
+        <p class="ptcg-form-section-hint">每行一项。留空则卡牌页使用系统默认；保存为空数组时可完全手输。</p>
+        <div class="form-row">
+          <textarea id="taCardStatus" class="ptcg-textarea-tall" rows="5" maxlength="8000" placeholder="在库&#10;已售&#10;出借"></textarea>
+        </div>
+      </section>
+
+      <section class="ptcg-form-section ptcg-form-section--accent">
+        <h2 class="ptcg-form-section-title">语言与版本</h2>
+        <p class="ptcg-form-section-hint">每种语言一行：左侧为语言名（与卡牌页「语言」一致），右侧为该语言下的版本（每行一项）。未配置「按语言版本」时，卡牌页仍可使用旧版「全局版本」列表（见下方）。</p>
+        <div id="langVersionPairs" class="lang-version-pairs" aria-label="语言与版本列表"></div>
+        <button type="button" id="btnAddLangRow" class="btn btn-secondary btn-sm btn-add-lang">+ 添加语言</button>
+
+        <details class="ptcg-details-legacy">
+          <summary>全局版本列表（兼容旧版，可选）</summary>
+          <p class="form-hint">仅当未使用上方「按语言分栏」或需兜底时使用。每行一项。</p>
+          <textarea id="taVersionLegacy" rows="4" maxlength="8000" placeholder="朱紫&#10;剑盾"></textarea>
+        </details>
+      </section>
+
+      <section class="ptcg-form-section">
+        <h2 class="ptcg-form-section-title">稀有度 · 品相</h2>
+        <div class="form-row form-row-half fields-form-grid">
+          <div class="form-cell">
+            <label>稀有度</label>
+            <textarea id="taRarity" rows="5" maxlength="8000" placeholder="AR&#10;SAR"></textarea>
+          </div>
+          <div class="form-cell">
+            <label>品相</label>
+            <textarea id="taCondition" rows="5" maxlength="8000" placeholder="NM&#10;LP"></textarea>
+          </div>
+        </div>
+      </section>
+
       <div class="form-btns">
         <button type="submit" class="btn btn-primary">保存全部</button>
       </div>
-      <p id="fdSaveMsg" class="ptcg-login-err" style="min-height:1.25rem;color:var(--success)" aria-live="polite"></p>
+      <p id="fdSaveMsg" class="fd-save-msg" aria-live="polite"></p>
     </form>
   </div>
 

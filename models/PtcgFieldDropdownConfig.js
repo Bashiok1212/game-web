@@ -10,7 +10,11 @@ const ptcgFieldDropdownConfigSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
-    /** 仅允许：cardStatus, language, rarity, condition, version；值为字符串数组，空数组表示该字段用手输 */
+    /**
+     * cardStatus/language/rarity/condition: 字符串数组，空数组表示手输
+     * version: 兼容旧数据，全局版本列表（无按语言配置时使用）
+     * versionByLanguage: { [语言名]: string[] }，每种语言独立版本下拉
+     */
     dropdowns: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }

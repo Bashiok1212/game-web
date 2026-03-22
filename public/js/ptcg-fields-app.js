@@ -16,6 +16,9 @@
   var registerForm = document.getElementById('ptcgRegisterForm');
   var registerErr = document.getElementById('ptcgRegisterErr');
 
+  var pairsContainer = document.getElementById('langVersionPairs');
+  var btnAddLangRow = document.getElementById('btnAddLangRow');
+
   function getToken() {
     try {
       return sessionStorage.getItem(TOKEN_KEY) || '';
@@ -97,23 +100,96 @@
     return arr.join('\n');
   }
 
+  function clearPairs() {
+    if (pairsContainer) pairsContainer.innerHTML = '';
+  }
+
+  function addLangRow(lang, versionText) {
+    if (!pairsContainer) return;
+    lang = lang != null ? String(lang) : '';
+    versionText = versionText != null ? String(versionText) : '';
+    var row = document.createElement('div');
+    row.className = 'lang-version-row';
+    row.innerHTML =
+      '<div class="lang-version-row-inner">' +
+      '<div class="lang-version-field">' +
+      '<label>语言</label>' +
+      '<input type="text" class="lang-version-input-lang" maxlength="128" placeholder="如：简中" value="">' +
+      '</div>' +
+      '<div class="lang-version-field lang-version-field--grow">' +
+      '<label>该语言的版本（每行一项）</label>' +
+      '<textarea class="lang-version-ta-ver" rows="4" maxlength="8000" placeholder="朱紫&#10;剑盾"></textarea>' +
+      '</div>' +
+      '<button type="button" class="btn btn-ghost btn-sm lang-version-remove" title="移除此行">×</button>' +
+      '</div>';
+    var inp = row.querySelector('.lang-version-input-lang');
+    var ta = row.querySelector('.lang-version-ta-ver');
+    var btnRm = row.querySelector('.lang-version-remove');
+    if (inp) inp.value = lang;
+    if (ta) ta.value = versionText;
+    if (btnRm) {
+      btnRm.addEventListener('click', function () {
+        row.remove();
+        if (pairsContainer && !pairsContainer.querySelector('.lang-version-row')) {
+          addLangRow('', '');
+        }
+      });
+    }
+    pairsContainer.appendChild(row);
+  }
+
   function loadRawIntoForm(raw) {
     raw = raw || {};
     var taCardStatus = document.getElementById('taCardStatus');
-    var taLanguage = document.getElementById('taLanguage');
-    var taVersion = document.getElementById('taVersion');
     var taRarity = document.getElementById('taRarity');
     var taCondition = document.getElementById('taCondition');
+    var taVersionLegacy = document.getElementById('taVersionLegacy');
 
     if (Object.prototype.hasOwnProperty.call(raw, 'cardStatus')) {
       taCardStatus.value = arrToLines(raw.cardStatus);
     } else {
       taCardStatus.value = arrToLines(DEFAULT_CARD_STATUS_LINES.slice());
     }
-    taLanguage.value = arrToLines(raw.language);
-    taVersion.value = arrToLines(raw.version);
+
+    clearPairs();
+    var vbl = raw.versionByLanguage && typeof raw.versionByLanguage === 'object' && !Array.isArray(raw.versionByLanguage)
+      ? raw.versionByLanguage
+      : null;
+    var keys = vbl && Object.keys(vbl).length ? Object.keys(vbl) : [];
+    if (keys.length) {
+      keys.forEach(function (k) {
+        addLangRow(k, arrToLines(vbl[k]));
+      });
+    } else if (raw.language && raw.language.length) {
+      var verText = arrToLines(raw.version || []);
+      raw.language.forEach(function (lang) {
+        addLangRow(lang, verText);
+      });
+    } else {
+      addLangRow('', '');
+    }
+
+    if (taVersionLegacy) {
+      taVersionLegacy.value = arrToLines(raw.version || []);
+    }
     taRarity.value = arrToLines(raw.rarity);
     taCondition.value = arrToLines(raw.condition);
+  }
+
+  function collectLangVersionFromDom() {
+    var versionByLanguage = {};
+    var languages = [];
+    if (!pairsContainer) return { language: languages, versionByLanguage: versionByLanguage };
+    var rows = pairsContainer.querySelectorAll('.lang-version-row');
+    rows.forEach(function (row) {
+      var inp = row.querySelector('.lang-version-input-lang');
+      var ta = row.querySelector('.lang-version-ta-ver');
+      var lang = inp && inp.value ? String(inp.value).trim() : '';
+      if (!lang) return;
+      languages.push(lang);
+      versionByLanguage[lang] = linesToArr(ta ? ta.value : '');
+    });
+    return { language: languages, versionByLanguage: versionByLanguage };
   }
 
   function fetchRaw() {
@@ -138,14 +214,27 @@
   function initFieldsApp() {
     fetchRaw().catch(function () {});
 
+    if (btnAddLangRow) {
+      btnAddLangRow.addEventListener('click', function () {
+        addLangRow('', '');
+      });
+    }
+
     document.getElementById('dropdownForm').addEventListener('submit', function (e) {
       e.preventDefault();
       var msg = document.getElementById('fdSaveMsg');
-      if (msg) msg.textContent = '';
+      if (msg) {
+        msg.textContent = '';
+        msg.className = 'fd-save-msg';
+      }
+      var lv = collectLangVersionFromDom();
+      var taVersionLegacy = document.getElementById('taVersionLegacy');
+      var legacyFlat = linesToArr(taVersionLegacy ? taVersionLegacy.value : '');
       var dropdowns = {
         cardStatus: linesToArr(document.getElementById('taCardStatus').value),
-        language: linesToArr(document.getElementById('taLanguage').value),
-        version: linesToArr(document.getElementById('taVersion').value),
+        language: lv.language,
+        versionByLanguage: lv.versionByLanguage,
+        version: legacyFlat,
         rarity: linesToArr(document.getElementById('taRarity').value),
         condition: linesToArr(document.getElementById('taCondition').value),
       };
@@ -166,15 +255,15 @@
         })
         .then(function () {
           if (msg) {
-            msg.style.color = 'var(--success)';
-            msg.textContent = '已保存。返回卡牌页即可看到下拉效果。';
+            msg.classList.add('fd-save-msg--ok');
+            msg.textContent = '已保存。返回卡牌页即可生效。';
           }
           return fetchRaw();
         })
         .catch(function (err) {
           if (err.message !== 'unauthorized') {
             if (msg) {
-              msg.style.color = 'var(--error)';
+              msg.classList.add('fd-save-msg--err');
               msg.textContent = err.message || '保存失败';
             }
           }

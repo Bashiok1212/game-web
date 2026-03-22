@@ -5,10 +5,9 @@
   var LEGACY_STORAGE = 'personalCards_v1';
   var IMAGE_FILE_MAX = 450000;
 
-  var DROPDOWN_KEYS = ['language', 'version', 'rarity', 'condition', 'cardStatus'];
+  var DROPDOWN_KEYS = ['language', 'rarity', 'condition', 'cardStatus'];
   var FIELD_IDS = {
     language: 'fLanguage',
-    version: 'fVersion',
     rarity: 'fRarity',
     condition: 'fCondition',
     cardStatus: 'fCardStatus',
@@ -288,7 +287,100 @@
     function fieldVal(id) {
       var el = document.getElementById(id);
       if (!el) return '';
+      if (el.disabled) return '';
       return el.value != null ? String(el.value).trim() : '';
+    }
+
+    function needsLanguageBeforeVersion() {
+      var vbl = dropdownConfig.versionByLanguage;
+      return (
+        vbl &&
+        typeof vbl === 'object' &&
+        !Array.isArray(vbl) &&
+        Object.keys(vbl).length > 0
+      );
+    }
+
+    function getVersionOpts(lang) {
+      var vbl = dropdownConfig.versionByLanguage;
+      var flat = dropdownConfig.version || [];
+      var hasLangMap =
+        vbl &&
+        typeof vbl === 'object' &&
+        !Array.isArray(vbl) &&
+        Object.keys(vbl).length > 0;
+      if (!hasLangMap) {
+        return Array.isArray(flat) ? flat : [];
+      }
+      lang = (lang || '').trim();
+      if (!lang) return [];
+      if (Object.prototype.hasOwnProperty.call(vbl, lang) && Array.isArray(vbl[lang])) {
+        return vbl[lang];
+      }
+      return [];
+    }
+
+    function renderVersionSlot(lang, curVersion) {
+      var slot = document.querySelector('.field-control[data-slot="version"]');
+      if (!slot) return;
+      curVersion = curVersion != null ? String(curVersion) : '';
+      var opts = getVersionOpts(lang);
+      var needLang = needsLanguageBeforeVersion();
+      slot.innerHTML = '';
+      var el;
+      if (opts.length > 0) {
+        var validCur = opts.indexOf(curVersion) >= 0 ? curVersion : '';
+        el = document.createElement('select');
+        el.id = 'fVersion';
+        var o0 = document.createElement('option');
+        o0.value = '';
+        o0.textContent = '（未选）';
+        el.appendChild(o0);
+        opts.forEach(function (opt) {
+          var o = document.createElement('option');
+          o.value = opt;
+          o.textContent = opt;
+          if (String(validCur) === String(opt)) o.selected = true;
+          el.appendChild(o);
+        });
+      } else {
+        el = document.createElement('input');
+        el.type = 'text';
+        el.id = 'fVersion';
+        el.maxLength = 128;
+        el.value = curVersion;
+        if (needLang && !(lang || '').trim()) {
+          el.disabled = true;
+          el.placeholder = '请先选择语言';
+        } else {
+          el.disabled = false;
+          el.placeholder = '该语言下的版本（可手输）';
+        }
+      }
+      slot.appendChild(el);
+    }
+
+    function attachLanguageVersionSync() {
+      var langEl = document.getElementById('fLanguage');
+      if (!langEl) return;
+      var sync = function () {
+        var L = fieldVal('fLanguage');
+        var pv = '';
+        var verEl = document.getElementById('fVersion');
+        if (verEl && !verEl.disabled) {
+          pv = verEl.value != null ? String(verEl.value).trim() : '';
+        }
+        var o = getVersionOpts(L);
+        var nv = '';
+        if (o.length > 0) {
+          nv = o.indexOf(pv) >= 0 ? pv : '';
+        } else {
+          nv = pv;
+        }
+        renderVersionSlot(L, nv);
+      };
+      langEl.onchange = sync;
+      langEl.oninput = sync;
     }
 
     function renderFieldControls(partial) {
@@ -320,17 +412,25 @@
           el.type = 'text';
           el.id = FIELD_IDS[key];
           if (key === 'language') el.maxLength = 32;
-          else if (key === 'version') el.maxLength = 128;
           else el.maxLength = 64;
           el.value = cur;
           if (key === 'language') el.placeholder = '简中 / 日文 / 英文…';
-          else if (key === 'version') el.placeholder = '补充包 / 礼盒 / 版本名';
           else if (key === 'rarity') el.placeholder = '如：AR / SAR / 闪';
           else if (key === 'condition') el.placeholder = '如：NM / 白边';
           else if (key === 'cardStatus') el.placeholder = '手输状态';
         }
         slot.appendChild(el);
       });
+      var lang =
+        partial.language !== undefined && partial.language !== null
+          ? String(partial.language)
+          : '';
+      var ver =
+        partial.version !== undefined && partial.version !== null
+          ? String(partial.version)
+          : '';
+      renderVersionSlot(lang, ver);
+      attachLanguageVersionSync();
     }
 
     function collectPayload() {

@@ -54,15 +54,15 @@
   </div>
 
   <div id="ptcgApp" class="cards-app hidden">
-    <header class="cards-header cards-header-row">
+    <header class="cards-header cards-header-row cards-header--hero">
       <div>
         <h1>PTCG 个人卡牌管理</h1>
-        <p class="cards-sub">核心字段固定；在「编辑字段」页为语言、版本、稀有度、品相、卡状态配置下拉选项（每行一项），保存后此处会显示为下拉或手输。</p>
+        <p class="cards-sub">在「编辑字段」配置下拉；语言与版本联动时，请先选语言再选版本。</p>
       </div>
       <button type="button" id="btnPtcgLogout" class="btn btn-ghost btn-sm">退出登录</button>
     </header>
 
-    <section class="cards-toolbar">
+    <section class="cards-toolbar cards-toolbar--elevated">
       <input type="search" id="cardSearch" class="cards-search" placeholder="搜索编号、名称、年份、语言、版本、稀有度、状态…" autocomplete="off">
       <div class="cards-actions">
         <a href="ptcg-fields.html" class="btn btn-secondary">编辑字段</a>
@@ -75,86 +75,105 @@
       </div>
     </section>
 
-    <div id="cardFormWrap" class="card-form-wrap hidden">
+    <div id="cardFormWrap" class="card-form-wrap card-form-wrap--panel hidden">
       <form id="cardForm" class="card-form" autocomplete="off">
         <input type="hidden" id="editId" value="">
         <p class="card-form-no" id="cardNoHint" aria-live="polite"></p>
         <p class="card-form-shortcuts" id="formShortcutsHint">提示：<kbd>Ctrl</kbd>+<kbd>Enter</kbd> 保存并继续下一张</p>
 
-        <div class="form-row">
-          <label>名称 <span class="req">*</span></label>
-          <input type="text" id="fName" required maxlength="128" placeholder="卡牌名称">
-        </div>
+        <section class="ptcg-form-section ptcg-form-section--inline">
+          <h2 class="ptcg-form-section-title">基本信息</h2>
+          <div class="form-row">
+            <label>名称 <span class="req">*</span></label>
+            <input type="text" id="fName" required maxlength="128" placeholder="卡牌名称">
+          </div>
+        </section>
 
-        <div class="form-row form-row-3">
-          <div class="form-cell">
-            <label>年份</label>
-            <input type="number" id="fYear" min="0" max="9999" step="1" placeholder="如 2024">
-          </div>
-          <div class="form-cell">
-            <label>语言</label>
-            <div class="field-control" data-slot="language"></div>
-          </div>
-          <div class="form-cell">
-            <label>版本</label>
-            <div class="field-control" data-slot="version"></div>
-          </div>
-        </div>
-
-        <div class="form-row form-row-half">
-          <div class="form-cell">
-            <label>稀有度</label>
-            <div class="field-control" data-slot="rarity"></div>
-          </div>
-          <div class="form-cell">
-            <label>购入价（元）</label>
-            <input type="number" id="fPurchasePrice" min="0" step="0.01" placeholder="0">
-          </div>
-        </div>
-
-        <div class="graded-block">
-          <div class="form-row form-row-graded">
-            <label class="label-inline">
-              <input type="checkbox" id="fGraded"> 评级卡
-            </label>
-          </div>
-          <div id="gradedFields" class="form-row form-row-half graded-fields hidden">
+        <section class="ptcg-form-section ptcg-form-section--accent">
+          <h2 class="ptcg-form-section-title">语言与版本</h2>
+          <p class="ptcg-form-section-hint">先选语言，再选该语言下的版本（若已配置）。</p>
+          <div class="form-row form-row-3 form-row-lang-ver">
             <div class="form-cell">
-              <label>评级公司 <span class="req graded-req">*</span></label>
-              <input type="text" id="fGradingCompany" maxlength="64" placeholder="PSA / BGS / CGC…">
+              <label>语言</label>
+              <div class="field-control" data-slot="language"></div>
             </div>
             <div class="form-cell">
-              <label>评级编号 <span class="req graded-req">*</span></label>
-              <input type="text" id="fGradingNumber" maxlength="64" placeholder="证书编号">
+              <label>版本</label>
+              <div class="field-control" data-slot="version"></div>
+            </div>
+            <div class="form-cell">
+              <label>年份</label>
+              <input type="number" id="fYear" min="0" max="9999" step="1" placeholder="如 2024">
             </div>
           </div>
-        </div>
+        </section>
 
-        <div class="form-row form-row-half">
-          <div class="form-cell">
-            <label>品相</label>
-            <div class="field-control" data-slot="condition"></div>
+        <section class="ptcg-form-section">
+          <h2 class="ptcg-form-section-title">稀有度与价格</h2>
+          <div class="form-row form-row-half">
+            <div class="form-cell">
+              <label>稀有度</label>
+              <div class="field-control" data-slot="rarity"></div>
+            </div>
+            <div class="form-cell">
+              <label>购入价（元）</label>
+              <input type="number" id="fPurchasePrice" min="0" step="0.01" placeholder="0">
+            </div>
           </div>
-          <div class="form-cell">
-            <label>卡状态</label>
-            <div class="field-control" data-slot="cardStatus"></div>
+        </section>
+
+        <section class="ptcg-form-section">
+          <h2 class="ptcg-form-section-title">评级</h2>
+          <div class="graded-block">
+            <div class="form-row form-row-graded">
+              <label class="label-inline">
+                <input type="checkbox" id="fGraded"> 评级卡
+              </label>
+            </div>
+            <div id="gradedFields" class="form-row form-row-half graded-fields hidden">
+              <div class="form-cell">
+                <label>评级公司 <span class="req graded-req">*</span></label>
+                <input type="text" id="fGradingCompany" maxlength="64" placeholder="PSA / BGS / CGC…">
+              </div>
+              <div class="form-cell">
+                <label>评级编号 <span class="req graded-req">*</span></label>
+                <input type="text" id="fGradingNumber" maxlength="64" placeholder="证书编号">
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div class="form-row">
-          <label>备注</label>
-          <textarea id="fNotes" rows="3" maxlength="2000" placeholder="其他说明"></textarea>
-        </div>
+        <section class="ptcg-form-section">
+          <h2 class="ptcg-form-section-title">品相与状态</h2>
+          <div class="form-row form-row-half">
+            <div class="form-cell">
+              <label>品相</label>
+              <div class="field-control" data-slot="condition"></div>
+            </div>
+            <div class="form-cell">
+              <label>卡状态</label>
+              <div class="field-control" data-slot="cardStatus"></div>
+            </div>
+          </div>
+        </section>
 
-        <div class="form-row">
-          <label>图片</label>
-          <input type="url" id="fImageUrl" maxlength="2000" placeholder="https:// 外链（推荐）或留空">
-          <p class="form-hint">或上传本地图片（建议 &lt; 400KB，将转为 Base64 存库）</p>
-          <input type="file" id="fImageFile" accept="image/*" class="input-file-inline">
-          <input type="hidden" id="fImage" value="">
-          <div id="fImagePreview" class="image-preview hidden"></div>
-          <button type="button" id="btnClearImage" class="btn btn-ghost btn-sm btn-clear-img hidden">清除图片</button>
-        </div>
+        <section class="ptcg-form-section">
+          <h2 class="ptcg-form-section-title">备注与图片</h2>
+          <div class="form-row">
+            <label>备注</label>
+            <textarea id="fNotes" rows="3" maxlength="2000" placeholder="其他说明"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label>图片</label>
+            <input type="url" id="fImageUrl" maxlength="2000" placeholder="https:// 外链（推荐）或留空">
+            <p class="form-hint">或上传本地图片（建议 &lt; 400KB，将转为 Base64 存库）</p>
+            <input type="file" id="fImageFile" accept="image/*" class="input-file-inline">
+            <input type="hidden" id="fImage" value="">
+            <div id="fImagePreview" class="image-preview hidden"></div>
+            <button type="button" id="btnClearImage" class="btn btn-ghost btn-sm btn-clear-img hidden">清除图片</button>
+          </div>
+        </section>
 
         <div class="form-btns">
           <button type="submit" class="btn btn-primary" id="btnSubmitCard">保存</button>

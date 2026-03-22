@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>PTCG 个人卡牌管理</title>
+  <link rel="stylesheet" href="css/cards.css">
+</head>
+<body>
+  <div class="cards-app">
+    <header class="cards-header">
+      <h1>PTCG 个人卡牌管理</h1>
+      <p class="cards-sub">数据仅保存在本机浏览器，换设备需导出备份。</p>
+    </header>
+
+    <section class="cards-toolbar">
+      <input type="search" id="cardSearch" class="cards-search" placeholder="搜索名称 / 系列 / 备注…" autocomplete="off">
+      <div class="cards-actions">
+        <button type="button" id="btnAddCard" class="btn btn-primary">添加卡牌</button>
+        <button type="button" id="btnExport" class="btn btn-secondary">导出 JSON</button>
+        <label class="btn btn-secondary btn-file">
+          导入 JSON
+          <input type="file" id="importFile" accept=".json,application/json" hidden>
+        </label>
+      </div>
+    </section>
+
+    <div id="cardFormWrap" class="card-form-wrap hidden">
+      <form id="cardForm" class="card-form">
+        <input type="hidden" id="editId" value="">
+        <div class="form-row">
+          <label>名称 <span class="req">*</span></label>
+          <input type="text" id="fName" required maxlength="128" placeholder="卡牌名称">
+        </div>
+        <div class="form-row">
+          <label>系列 / 弹</label>
+          <input type="text" id="fSet" maxlength="128" placeholder="如：SV9 / 朱紫">
+        </div>
+        <div class="form-row form-row-half">
+          <div>
+            <label>数量</label>
+            <input type="number" id="fQty" min="0" value="1" step="1">
+          </div>
+          <div>
+            <label>品相</label>
+            <input type="text" id="fCondition" maxlength="64" placeholder="如：NM / 略损">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>备注</label>
+          <textarea id="fNotes" rows="3" maxlength="2000" placeholder="收购价、存放位置等"></textarea>
+        </div>
+        <div class="form-btns">
+          <button type="submit" class="btn btn-primary">保存</button>
+          <button type="button" id="btnCancelForm" class="btn btn-ghost">取消</button>
+        </div>
+      </form>
+    </div>
+
+    <section class="cards-list-section">
+      <p id="cardsEmpty" class="cards-empty">暂无卡牌，点击「添加卡牌」开始。</p>
+      <ul id="cardsList" class="cards-list"></ul>
+    </section>
+  </div>
+  <script src="js/cards-app.js"></script>
+</body>
+</html>

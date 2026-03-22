@@ -7,10 +7,129 @@ body {
   background: var(--bg);
 }
 
+/* 登录层 */
+.ptcg-auth-panel {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--bg);
+}
+
+.ptcg-auth-panel.hidden {
+  display: none !important;
+}
+
+.ptcg-auth-box {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem 1.25rem;
+}
+
+.ptcg-auth-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.ptcg-tab {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.ptcg-tab.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.ptcg-auth-title {
+  font-size: 1.15rem;
+  margin-bottom: 0.5rem;
+}
+
+.ptcg-auth-box h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.ptcg-auth-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.ptcg-auth-hint code {
+  font-size: 0.75rem;
+  background: var(--bg);
+  padding: 0.1rem 0.25rem;
+  border-radius: 4px;
+}
+
+.ptcg-auth-box .form-row {
+  margin-bottom: 0.85rem;
+}
+
+.ptcg-auth-box label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.ptcg-auth-box input[type="text"],
+.ptcg-auth-box input[type="password"] {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.ptcg-login-err {
+  color: var(--error);
+  font-size: 0.85rem;
+  min-height: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.ptcg-msg-ok.ptcg-login-err {
+  color: var(--success);
+}
+
+.cards-app.hidden {
+  display: none !important;
+}
+
 .cards-app {
   max-width: 720px;
   margin: 0 auto;
   padding: 1.5rem 1rem 3rem;
+}
+
+.cards-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  text-align: left;
+}
+
+.cards-header-row .cards-sub {
+  text-align: left;
 }
 
 .cards-header {

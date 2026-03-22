@@ -97,6 +97,40 @@
 
 ---
 
+### 1.5 PTCG 个人卡牌页（独立管理员）
+
+用于 `/ptcg.html`，与游戏账号无关。管理员账号存 **MongoDB**（集合 `PtcgAdmin`）；可选在 `.env` 配置 `PTCG_ADMIN_USER` / `PTCG_ADMIN_PASSWORD` 作为备用登录。
+
+**POST /api/ptcg/register**
+
+请求体：`{ "username": "string", "password": "string", "registerSecret": "可选" }`
+
+- 用户名：`3～32` 位；密码：至少 `6` 位。
+- 若设置 `PTCG_REGISTER_SECRET`，则 `registerSecret` 须与之一致。
+- 若未设置 `PTCG_REGISTER_SECRET`，则**仅当库中尚无 PTCG 管理员**时允许注册（首个账号）。
+
+**成功 (200)**：`{ "ok": true, "message": "注册成功，请登录" }`  
+**失败**：400 / 403 / 500
+
+**POST /api/ptcg/login**
+
+请求体：`{ "username": "string", "password": "string" }`
+
+- 优先匹配 MongoDB 中账号；否则尝试 `.env` 备用账号。
+
+**成功 (200)**：`{ "ok": true, "token": "<JWT>" }`（约 7 天有效）
+
+**失败**：400 / 401 / 503（无任何账号且未配置备用时）
+
+**GET /api/ptcg/verify**
+
+请求头：`Authorization: Bearer <token>`
+
+**成功 (200)**：`{ "ok": true }`  
+**失败**：401 / 403
+
+---
+
 ## 二、用户接口（需 Bearer Token）
 
 ### 2.1 获取当前用户信息

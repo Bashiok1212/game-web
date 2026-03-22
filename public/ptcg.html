@@ -8,10 +8,59 @@
   <link rel="stylesheet" href="css/cards.css">
 </head>
 <body>
-  <div class="cards-app">
-    <header class="cards-header">
-      <h1>PTCG 个人卡牌管理</h1>
-      <p class="cards-sub">数据仅保存在本机浏览器，换设备需导出备份。</p>
+  <!-- PTCG 独立账号：MongoDB 存储；可选 .env 备用登录 -->
+  <div id="ptcgAuth" class="ptcg-auth-panel">
+    <div class="ptcg-auth-box">
+      <div class="ptcg-auth-tabs">
+        <button type="button" class="ptcg-tab active" id="tabLogin" data-tab="login">登录</button>
+        <button type="button" class="ptcg-tab" id="tabRegister" data-tab="register">注册</button>
+      </div>
+      <div id="ptcgLoginPanel">
+        <h2 class="ptcg-auth-title">PTCG 管理登录</h2>
+        <p class="ptcg-auth-hint">账号保存在服务器数据库，与游戏账号无关。</p>
+        <form id="ptcgLoginForm" autocomplete="on">
+          <div class="form-row">
+            <label for="ptcgUser">用户名</label>
+            <input type="text" id="ptcgUser" name="username" autocomplete="username" required maxlength="32">
+          </div>
+          <div class="form-row">
+            <label for="ptcgPass">密码</label>
+            <input type="password" id="ptcgPass" name="password" autocomplete="current-password" required maxlength="128">
+          </div>
+          <p id="ptcgLoginErr" class="ptcg-login-err" role="alert"></p>
+          <button type="submit" class="btn btn-primary btn-block">登录</button>
+        </form>
+      </div>
+      <div id="ptcgRegisterPanel" class="hidden">
+        <h2 class="ptcg-auth-title">注册 PTCG 管理员</h2>
+        <p class="ptcg-auth-hint">首个账号可直接注册；之后需在服务器设置 <code>PTCG_REGISTER_SECRET</code> 并填写下方密钥。</p>
+        <form id="ptcgRegisterForm" autocomplete="on">
+          <div class="form-row">
+            <label for="ptcgRegUser">用户名</label>
+            <input type="text" id="ptcgRegUser" maxlength="32" placeholder="3～32 位" required>
+          </div>
+          <div class="form-row">
+            <label for="ptcgRegPass">密码</label>
+            <input type="password" id="ptcgRegPass" maxlength="128" placeholder="至少 6 位" required>
+          </div>
+          <div class="form-row">
+            <label for="ptcgRegSecret">注册密钥（可选）</label>
+            <input type="password" id="ptcgRegSecret" maxlength="128" placeholder="与服务器 PTCG_REGISTER_SECRET 一致">
+          </div>
+          <p id="ptcgRegisterErr" class="ptcg-login-err" role="alert"></p>
+          <button type="submit" class="btn btn-primary btn-block">注册</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="ptcgApp" class="cards-app hidden">
+    <header class="cards-header cards-header-row">
+      <div>
+        <h1>PTCG 个人卡牌管理</h1>
+        <p class="cards-sub">数据仅保存在本机浏览器，换设备需导出备份。</p>
+      </div>
+      <button type="button" id="btnPtcgLogout" class="btn btn-ghost btn-sm">退出登录</button>
     </header>
 
     <section class="cards-toolbar">

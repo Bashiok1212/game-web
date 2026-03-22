@@ -139,6 +139,8 @@
 | PUT | `/api/ptcg/cards/:id` | 更新（同字段；**不可改** `cardNo`） |
 | DELETE | `/api/ptcg/cards/:id` | 删除 |
 | POST | `/api/ptcg/cards/import` | 批量导入（body：`{ "items": [ ... ] }` 或直接数组，与导出 JSON 兼容） |
+| POST | `/api/ptcg/cards/:id/stock` | **入库/出库**：body：`{ "type": "in" \| "out", "quantity": <正整数>, "note": "<可选备注>" }`；成功返回 `{ "ok": true, "card": { "id", "quantity" }, "log": { ... } }` |
+| GET | `/api/ptcg/cards/:id/stock-logs` | 库存流水；query：`limit`（默认 50，最大 200）、`skip`；返回 `{ "logs": [ { "id", "type", "quantity", "balanceAfter", "note", "createdAt" } ] }` |
 
 **卡牌字段**（`name` 必填；`cardNo` 为保存后自动生成序号，仅列表展示）：
 
@@ -158,7 +160,8 @@
 | `notes` | 备注 |
 | `cardStatus` | 卡状态（如：在库 / 已售） |
 | `image` | 图片（外链 URL 或 `data:image/...` Base64，勿过大） |
-| `set` / `quantity` | 兼容旧数据 |
+| `set` | 兼容旧数据 |
+| `quantity` | **库存数量**（非负整数；列表「入库/出库」会增减并记流水；也可在表单直接保存） |
 
 #### 现有字段下拉配置（均需 Bearer + `adminId`）
 

@@ -20,6 +20,8 @@ const ptcgCardSchema = new mongoose.Schema(
     version: { type: String, trim: true, maxlength: 128, default: '' },
     /** 与「编辑字段」中版本配置的扩展编号一致（如扩展代号），可与名称分开存 */
     versionCode: { type: String, trim: true, maxlength: 64, default: '' },
+    /** 该张卡在版本/扩展内的编号（如 078/207、卡序号） */
+    versionNumber: { type: String, trim: true, maxlength: 64, default: '' },
     rarity: { type: String, trim: true, maxlength: 64, default: '' },
     purchasePrice: { type: Number, min: 0, default: 0 },
     graded: { type: Boolean, default: false },

@@ -111,11 +111,12 @@
   }
 
   function normalizeVersionEntryLoad(v) {
-    if (v == null) return { name: '', year: '', code: '' };
+    if (v == null) return { name: '', year: '', code: '', maxNo: '' };
     if (typeof v === 'string') {
-      return { name: String(v).trim(), year: '', code: '' };
+      return { name: String(v).trim(), year: '', code: '', maxNo: '' };
     }
     if (typeof v === 'object') {
+      var maxRaw = v.maxNo != null ? v.maxNo : v.numberMax != null ? v.numberMax : '';
       return {
         name: v.name != null ? String(v.name).trim() : '',
         year: v.year != null && v.year !== '' ? String(v.year) : '',
@@ -125,9 +126,10 @@
             : v.versionCode != null
               ? String(v.versionCode).trim()
               : '',
+        maxNo: maxRaw !== '' && maxRaw != null ? String(maxRaw) : '',
       };
     }
-    return { name: '', year: '', code: '' };
+    return { name: '', year: '', code: '', maxNo: '' };
   }
 
   function addVersionMetaRow(container, entry) {
@@ -136,6 +138,7 @@
     var name = entry.name != null ? String(entry.name) : '';
     var year = entry.year != null && entry.year !== '' ? String(entry.year) : '';
     var code = entry.code != null ? String(entry.code) : '';
+    var maxNo = entry.maxNo != null && entry.maxNo !== '' ? String(entry.maxNo) : '';
     var row = document.createElement('div');
     row.className = 'version-meta-row';
     row.innerHTML =
@@ -152,15 +155,21 @@
       '<label>扩展编号</label>' +
       '<input type="text" class="vm-code" maxlength="128" placeholder="如：SV1">' +
       '</div>' +
+      '<div class="version-meta-field">' +
+      '<label>编号上限</label>' +
+      '<input type="number" class="vm-max" min="1" max="999999" step="1" placeholder="如：207">' +
+      '</div>' +
       '</div>' +
       '<button type="button" class="btn btn-ghost btn-sm vm-rm" title="移除此版本">×</button>';
     var inpN = row.querySelector('.vm-name');
     var inpY = row.querySelector('.vm-year');
     var inpC = row.querySelector('.vm-code');
+    var inpM = row.querySelector('.vm-max');
     var btnRm = row.querySelector('.vm-rm');
     if (inpN) inpN.value = name;
     if (inpY) inpY.value = year;
     if (inpC) inpC.value = code;
+    if (inpM) inpM.value = maxNo;
     if (btnRm) {
       btnRm.addEventListener('click', function () {
         row.remove();
@@ -203,7 +212,7 @@
       '<input type="text" class="lang-version-input-lang" maxlength="128" placeholder="如：简中" value="">' +
       '</div>' +
       '<div class="lang-version-field lang-version-field--grow">' +
-      '<label>该语言的版本（名称 · 年份 · 扩展编号）</label>' +
+      '<label>该语言的版本（名称 · 年份 · 扩展编号 · 编号上限）</label>' +
       '<div class="version-meta-rows"></div>' +
       '<button type="button" class="btn btn-secondary btn-sm btn-add-ver-meta">+ 添加版本</button>' +
       '</div>' +

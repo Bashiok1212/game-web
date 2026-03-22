@@ -63,7 +63,7 @@
     </header>
 
     <section class="cards-toolbar cards-toolbar--elevated">
-      <input type="search" id="cardSearch" class="cards-search" placeholder="搜索编号、名称、年份、语言、版本、扩展编号、稀有度、状态…" autocomplete="off">
+      <input type="search" id="cardSearch" class="cards-search" placeholder="搜索编号、名称、年份、语言、版本、扩展编号、版本编号、稀有度、状态…" autocomplete="off">
       <div class="cards-actions">
         <a href="ptcg-fields.html" class="btn btn-secondary">编辑字段</a>
         <button type="button" id="btnStockLedger" class="btn btn-secondary">出入库明细</button>
@@ -92,8 +92,8 @@
 
         <section class="ptcg-form-section ptcg-form-section--accent">
           <h2 class="ptcg-form-section-title">语言与版本</h2>
-          <p class="ptcg-form-section-hint">先选语言，再选版本（若已在「编辑字段」配置，可自动带出年份与扩展编号）。每条卡牌仍有<strong>自动生成编号</strong>（见上方提示）。</p>
-          <div class="form-row form-row-4 form-row-lang-ver">
+          <p class="ptcg-form-section-hint">先选语言，再选版本（若已在「编辑字段」配置，可自动带出年份与扩展编号）。<strong>版本编号</strong>填该张卡在扩展内的序号（如 078/207）。每条卡牌仍有<strong>自动生成编号</strong>（见上方提示）。</p>
+          <div class="form-row form-row-3 form-row-lang-ver">
             <div class="form-cell">
               <label>语言</label>
               <div class="field-control" data-slot="language"></div>
@@ -106,9 +106,15 @@
               <label>年份</label>
               <input type="number" id="fYear" min="0" max="9999" step="1" placeholder="如 2024">
             </div>
+          </div>
+          <div class="form-row form-row-half">
             <div class="form-cell">
               <label>扩展编号</label>
               <input type="text" id="fVersionCode" maxlength="64" placeholder="与版本配置一致，可手改">
+            </div>
+            <div class="form-cell">
+              <label>版本编号</label>
+              <input type="text" id="fVersionNumber" maxlength="64" placeholder="如 078/207 或卡序号">
             </div>
           </div>
         </section>
@@ -200,6 +206,7 @@
               <th scope="col">年份</th>
               <th scope="col">语言</th>
               <th scope="col">版本 / 扩展编号</th>
+              <th scope="col">版本编号</th>
               <th scope="col">稀有度</th>
               <th scope="col" class="cards-th-num">购入</th>
               <th scope="col">评级</th>

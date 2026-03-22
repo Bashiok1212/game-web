@@ -212,6 +212,7 @@
       c.language,
       c.version,
       c.versionCode,
+      c.versionNumber,
       c.rarity,
       c.purchasePrice,
       c.graded ? '评级' : '',
@@ -313,7 +314,7 @@
       if (v == null) return null;
       if (typeof v === 'string') {
         var ns = String(v).trim();
-        return ns ? { name: ns, year: null, code: '' } : null;
+        return ns ? { name: ns, year: null, code: '', maxNo: null } : null;
       }
       if (typeof v === 'object') {
         var name = String(v.name != null ? v.name : '').trim();
@@ -324,7 +325,13 @@
           if (!Number.isNaN(y) && y >= 0 && y <= 9999) year = y;
         }
         var code = v.code != null ? String(v.code).trim() : '';
-        return { name: name, year: year, code: code };
+        var maxNo = null;
+        var rawMx = v.maxNo != null ? v.maxNo : v.numberMax != null ? v.numberMax : '';
+        if (rawMx !== undefined && rawMx !== null && rawMx !== '') {
+          var mx = parseInt(rawMx, 10);
+          if (!Number.isNaN(mx) && mx >= 1 && mx <= 999999) maxNo = mx;
+        }
+        return { name: name, year: year, code: code, maxNo: maxNo };
       }
       return null;
     }
@@ -333,6 +340,7 @@
       var bits = [];
       if (entry.year != null && entry.year !== '') bits.push(entry.year);
       if (entry.code) bits.push(entry.code);
+      if (entry.maxNo != null && entry.maxNo !== '') bits.push('上限' + entry.maxNo);
       if (bits.length) return entry.name + '（' + bits.join(' · ') + '）';
       return entry.name;
     }
@@ -412,6 +420,7 @@
           o.textContent = versionOptionLabel(entry);
           if (entry.year != null && entry.year !== '') o.setAttribute('data-year', String(entry.year));
           if (entry.code) o.setAttribute('data-code', entry.code);
+          if (entry.maxNo != null && entry.maxNo !== '') o.setAttribute('data-max-no', String(entry.maxNo));
           if (String(validCur) === String(entry.name)) o.selected = true;
           el.appendChild(o);
         });
@@ -511,6 +520,13 @@
             ? String(partial.versionCode)
             : '';
       }
+      var fVn = document.getElementById('fVersionNumber');
+      if (fVn) {
+        fVn.value =
+          partial.versionNumber != null && partial.versionNumber !== undefined
+            ? String(partial.versionNumber)
+            : '';
+      }
     }
 
     function collectPayload() {
@@ -523,6 +539,7 @@
         language: fieldVal('fLanguage'),
         version: fieldVal('fVersion'),
         versionCode: fieldVal('fVersionCode'),
+        versionNumber: fieldVal('fVersionNumber'),
         rarity: fieldVal('fRarity'),
         purchasePrice: fPurchasePrice.value === '' ? '' : fPurchasePrice.value,
         graded: graded,
@@ -541,6 +558,7 @@
         language: fieldVal('fLanguage'),
         version: fieldVal('fVersion'),
         versionCode: fieldVal('fVersionCode'),
+        versionNumber: fieldVal('fVersionNumber'),
         rarity: fieldVal('fRarity'),
         purchasePrice: fPurchasePrice.value,
         condition: fieldVal('fCondition'),
@@ -556,10 +574,13 @@
       fGradingNumber.value = '';
       var fVersionCode = document.getElementById('fVersionCode');
       if (fVersionCode) fVersionCode.value = S.versionCode || '';
+      var fVersionNumber = document.getElementById('fVersionNumber');
+      if (fVersionNumber) fVersionNumber.value = S.versionNumber || '';
       renderFieldControls({
         language: S.language,
         version: S.version,
         versionCode: S.versionCode,
+        versionNumber: S.versionNumber,
         rarity: S.rarity,
         condition: S.condition,
         cardStatus: S.cardStatus,
@@ -806,6 +827,7 @@
         tr.appendChild(tdText(c.year != null && c.year !== '' ? c.year : '', ''));
         tr.appendChild(tdText(c.language, ''));
         tr.appendChild(tdText(formatVersionCell(c), ''));
+        tr.appendChild(tdText(c.versionNumber, ''));
         tr.appendChild(tdText(c.rarity, ''));
         var priceStr = '';
         if (c.purchasePrice != null && c.purchasePrice !== '') {
@@ -863,6 +885,8 @@
       fNotes.value = card ? card.notes || '' : '';
       var fVersionCodeEl = document.getElementById('fVersionCode');
       if (fVersionCodeEl) fVersionCodeEl.value = card ? card.versionCode || '' : '';
+      var fVersionNumberEl = document.getElementById('fVersionNumber');
+      if (fVersionNumberEl) fVersionNumberEl.value = card ? card.versionNumber || '' : '';
       clearImageFields();
       if (card && card.image) {
         if (card.image.indexOf('data:') === 0) {
@@ -883,6 +907,7 @@
                   language: card.language || '',
                   version: card.version || card.set || '',
                   versionCode: card.versionCode || '',
+                  versionNumber: card.versionNumber || '',
                   rarity: card.rarity || '',
                   condition: card.condition || '',
                   cardStatus: card.cardStatus || '',
@@ -897,6 +922,7 @@
                   language: card.language || '',
                   version: card.version || card.set || '',
                   versionCode: card.versionCode || '',
+                  versionNumber: card.versionNumber || '',
                   rarity: card.rarity || '',
                   condition: card.condition || '',
                   cardStatus: card.cardStatus || '',

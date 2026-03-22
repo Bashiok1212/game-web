@@ -25,7 +25,7 @@ function sanitizeOptions(arr) {
     .slice(0, MAX_OPTS);
 }
 
-/** 版本项：{ name, year?, code? }；兼容旧版纯字符串 */
+/** 版本项：{ name, year?, code?, maxNo? }；maxNo 为编号上限（如卡序号上限）；兼容旧版纯字符串 */
 function normalizeVersionItem(v) {
   if (v == null) return null;
   if (typeof v === 'string') {
@@ -42,7 +42,15 @@ function normalizeVersionItem(v) {
     }
     const codeRaw = v.code != null ? v.code : v.versionCode != null ? v.versionCode : '';
     const code = String(codeRaw).trim().slice(0, MAX_LEN);
-    return { name, year, code };
+    let maxNo;
+    const rawMax = v.maxNo != null ? v.maxNo : v.numberMax != null ? v.numberMax : undefined;
+    if (rawMax !== undefined && rawMax !== null && rawMax !== '') {
+      const m = parseInt(rawMax, 10);
+      if (!Number.isNaN(m) && m >= 1 && m <= 999999) maxNo = m;
+    }
+    const result = { name, year, code };
+    if (maxNo !== undefined) result.maxNo = maxNo;
+    return result;
   }
   return null;
 }

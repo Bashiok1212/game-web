@@ -76,14 +76,15 @@
 
       <section class="ptcg-form-section ptcg-form-section--accent">
         <h2 class="ptcg-form-section-title">语言与版本</h2>
-        <p class="ptcg-form-section-hint">每种语言一行：左侧为语言名（与卡牌页「语言」一致），右侧为该语言下的版本（每行一项）。未配置「按语言版本」时，卡牌页仍可使用旧版「全局版本」列表（见下方）。</p>
+        <p class="ptcg-form-section-hint">每种语言一行：左侧为语言名（与卡牌页「语言」一致），右侧为该语言下的<strong>版本列表</strong>；每个版本可填<strong>名称、对应年份、扩展编号</strong>（如扩展代号）。录入页选版本时可自动带出年份与编号。未配置「按语言版本」时，仍可使用下方「全局版本」兜底。</p>
         <div id="langVersionPairs" class="lang-version-pairs" aria-label="语言与版本列表"></div>
         <button type="button" id="btnAddLangRow" class="btn btn-secondary btn-sm btn-add-lang">+ 添加语言</button>
 
         <details class="ptcg-details-legacy">
           <summary>全局版本列表（兼容旧版，可选）</summary>
-          <p class="form-hint">仅当未使用上方「按语言分栏」或需兜底时使用。每行一项。</p>
-          <textarea id="taVersionLegacy" rows="4" maxlength="8000" placeholder="朱紫&#10;剑盾"></textarea>
+          <p class="form-hint">仅当未使用上方「按语言分栏」或需兜底时使用。与上方相同：每个版本可填名称、年份、扩展编号。</p>
+          <div id="legacyVersionRows" class="version-meta-rows" aria-label="全局版本列表"></div>
+          <button type="button" id="btnAddLegacyVer" class="btn btn-secondary btn-sm btn-add-ver-global">+ 添加版本</button>
         </details>
       </section>
 

@@ -211,6 +211,7 @@
       c.year,
       c.language,
       c.version,
+      c.versionCode,
       c.rarity,
       c.purchasePrice,
       c.graded ? '评级' : '',
@@ -308,6 +309,34 @@
       return el.value != null ? String(el.value).trim() : '';
     }
 
+    function parseVersionEntryClient(v) {
+      if (v == null) return null;
+      if (typeof v === 'string') {
+        var ns = String(v).trim();
+        return ns ? { name: ns, year: null, code: '' } : null;
+      }
+      if (typeof v === 'object') {
+        var name = String(v.name != null ? v.name : '').trim();
+        if (!name) return null;
+        var year = null;
+        if (v.year !== undefined && v.year !== null && v.year !== '') {
+          var y = parseInt(v.year, 10);
+          if (!Number.isNaN(y) && y >= 0 && y <= 9999) year = y;
+        }
+        var code = v.code != null ? String(v.code).trim() : '';
+        return { name: name, year: year, code: code };
+      }
+      return null;
+    }
+
+    function versionOptionLabel(entry) {
+      var bits = [];
+      if (entry.year != null && entry.year !== '') bits.push(entry.year);
+      if (entry.code) bits.push(entry.code);
+      if (bits.length) return entry.name + '（' + bits.join(' · ') + '）';
+      return entry.name;
+    }
+
     function needsLanguageBeforeVersion() {
       var vbl = dropdownConfig.versionByLanguage;
       return (
@@ -327,14 +356,38 @@
         !Array.isArray(vbl) &&
         Object.keys(vbl).length > 0;
       if (!hasLangMap) {
-        return Array.isArray(flat) ? flat : [];
+        var fa = Array.isArray(flat) ? flat : [];
+        return fa.map(parseVersionEntryClient).filter(Boolean);
       }
       lang = (lang || '').trim();
       if (!lang) return [];
       if (Object.prototype.hasOwnProperty.call(vbl, lang) && Array.isArray(vbl[lang])) {
-        return vbl[lang];
+        return vbl[lang].map(parseVersionEntryClient).filter(Boolean);
       }
       return [];
+    }
+
+    function findVersionNameInOpts(opts, curVersion) {
+      var cv = curVersion != null ? String(curVersion).trim() : '';
+      if (!cv) return '';
+      for (var i = 0; i < opts.length; i++) {
+        if (opts[i].name === cv) return cv;
+      }
+      return '';
+    }
+
+    function bindVersionMetaFromSelect(verEl) {
+      if (!verEl || verEl.tagName !== 'SELECT') return;
+      var fYear = document.getElementById('fYear');
+      var fVersionCode = document.getElementById('fVersionCode');
+      verEl.addEventListener('change', function () {
+        var opt = verEl.options[verEl.selectedIndex];
+        if (!opt) return;
+        var y = opt.getAttribute('data-year');
+        var code = opt.getAttribute('data-code');
+        if (fYear && y !== null && y !== '') fYear.value = y;
+        if (fVersionCode && code !== null) fVersionCode.value = code || '';
+      });
     }
 
     function renderVersionSlot(lang, curVersion) {
@@ -346,20 +399,23 @@
       slot.innerHTML = '';
       var el;
       if (opts.length > 0) {
-        var validCur = opts.indexOf(curVersion) >= 0 ? curVersion : '';
+        var validCur = findVersionNameInOpts(opts, curVersion);
         el = document.createElement('select');
         el.id = 'fVersion';
         var o0 = document.createElement('option');
         o0.value = '';
         o0.textContent = '（未选）';
         el.appendChild(o0);
-        opts.forEach(function (opt) {
+        opts.forEach(function (entry) {
           var o = document.createElement('option');
-          o.value = opt;
-          o.textContent = opt;
-          if (String(validCur) === String(opt)) o.selected = true;
+          o.value = entry.name;
+          o.textContent = versionOptionLabel(entry);
+          if (entry.year != null && entry.year !== '') o.setAttribute('data-year', String(entry.year));
+          if (entry.code) o.setAttribute('data-code', entry.code);
+          if (String(validCur) === String(entry.name)) o.selected = true;
           el.appendChild(o);
         });
+        bindVersionMetaFromSelect(el);
       } else {
         el = document.createElement('input');
         el.type = 'text';
@@ -387,10 +443,10 @@
         if (verEl && !verEl.disabled) {
           pv = verEl.value != null ? String(verEl.value).trim() : '';
         }
-        var o = getVersionOpts(L);
+        var list = getVersionOpts(L);
         var nv = '';
-        if (o.length > 0) {
-          nv = o.indexOf(pv) >= 0 ? pv : '';
+        if (list.length > 0) {
+          nv = findVersionNameInOpts(list, pv);
         } else {
           nv = pv;
         }
@@ -448,6 +504,13 @@
           : '';
       renderVersionSlot(lang, ver);
       attachLanguageVersionSync();
+      var fVc = document.getElementById('fVersionCode');
+      if (fVc) {
+        fVc.value =
+          partial.versionCode != null && partial.versionCode !== undefined
+            ? String(partial.versionCode)
+            : '';
+      }
     }
 
     function collectPayload() {
@@ -459,6 +522,7 @@
         year: fYear.value === '' ? '' : fYear.value,
         language: fieldVal('fLanguage'),
         version: fieldVal('fVersion'),
+        versionCode: fieldVal('fVersionCode'),
         rarity: fieldVal('fRarity'),
         purchasePrice: fPurchasePrice.value === '' ? '' : fPurchasePrice.value,
         graded: graded,
@@ -476,6 +540,7 @@
         year: fYear.value,
         language: fieldVal('fLanguage'),
         version: fieldVal('fVersion'),
+        versionCode: fieldVal('fVersionCode'),
         rarity: fieldVal('fRarity'),
         purchasePrice: fPurchasePrice.value,
         condition: fieldVal('fCondition'),
@@ -489,9 +554,12 @@
       fGraded.checked = false;
       fGradingCompany.value = '';
       fGradingNumber.value = '';
+      var fVersionCode = document.getElementById('fVersionCode');
+      if (fVersionCode) fVersionCode.value = S.versionCode || '';
       renderFieldControls({
         language: S.language,
         version: S.version,
+        versionCode: S.versionCode,
         rarity: S.rarity,
         condition: S.condition,
         cardStatus: S.cardStatus,
@@ -680,6 +748,15 @@
       return td;
     }
 
+    function formatVersionCell(c) {
+      var v = String(c.version || c.set || '').trim();
+      var code = String(c.versionCode || '').trim();
+      if (v && code) return v + ' · ' + code;
+      if (v) return v;
+      if (code) return code;
+      return '';
+    }
+
     function tdNotes(text) {
       var td = document.createElement('td');
       td.className = 'cards-td-notes';
@@ -728,7 +805,7 @@
         tr.appendChild(tdText(c.name || '（未命名）', 'cards-td-name'));
         tr.appendChild(tdText(c.year != null && c.year !== '' ? c.year : '', ''));
         tr.appendChild(tdText(c.language, ''));
-        tr.appendChild(tdText(c.version || c.set || '', ''));
+        tr.appendChild(tdText(formatVersionCell(c), ''));
         tr.appendChild(tdText(c.rarity, ''));
         var priceStr = '';
         if (c.purchasePrice != null && c.purchasePrice !== '') {
@@ -784,6 +861,8 @@
       fGradingCompany.value = card ? card.gradingCompany || '' : '';
       fGradingNumber.value = card ? card.gradingNumber || '' : '';
       fNotes.value = card ? card.notes || '' : '';
+      var fVersionCodeEl = document.getElementById('fVersionCode');
+      if (fVersionCodeEl) fVersionCodeEl.value = card ? card.versionCode || '' : '';
       clearImageFields();
       if (card && card.image) {
         if (card.image.indexOf('data:') === 0) {
@@ -803,6 +882,7 @@
               ? {
                   language: card.language || '',
                   version: card.version || card.set || '',
+                  versionCode: card.versionCode || '',
                   rarity: card.rarity || '',
                   condition: card.condition || '',
                   cardStatus: card.cardStatus || '',
@@ -816,6 +896,7 @@
               ? {
                   language: card.language || '',
                   version: card.version || card.set || '',
+                  versionCode: card.versionCode || '',
                   rarity: card.rarity || '',
                   condition: card.condition || '',
                   cardStatus: card.cardStatus || '',

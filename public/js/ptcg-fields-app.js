@@ -18,6 +18,8 @@
 
   var pairsContainer = document.getElementById('langVersionPairs');
   var btnAddLangRow = document.getElementById('btnAddLangRow');
+  var legacyVersionRows = document.getElementById('legacyVersionRows');
+  var btnAddLegacyVer = document.getElementById('btnAddLegacyVer');
 
   function getToken() {
     try {
@@ -104,10 +106,94 @@
     if (pairsContainer) pairsContainer.innerHTML = '';
   }
 
-  function addLangRow(lang, versionText) {
+  function clearLegacyRows() {
+    if (legacyVersionRows) legacyVersionRows.innerHTML = '';
+  }
+
+  function normalizeVersionEntryLoad(v) {
+    if (v == null) return { name: '', year: '', code: '' };
+    if (typeof v === 'string') {
+      return { name: String(v).trim(), year: '', code: '' };
+    }
+    if (typeof v === 'object') {
+      return {
+        name: v.name != null ? String(v.name).trim() : '',
+        year: v.year != null && v.year !== '' ? String(v.year) : '',
+        code:
+          v.code != null
+            ? String(v.code).trim()
+            : v.versionCode != null
+              ? String(v.versionCode).trim()
+              : '',
+      };
+    }
+    return { name: '', year: '', code: '' };
+  }
+
+  function addVersionMetaRow(container, entry) {
+    if (!container) return;
+    entry = entry || {};
+    var name = entry.name != null ? String(entry.name) : '';
+    var year = entry.year != null && entry.year !== '' ? String(entry.year) : '';
+    var code = entry.code != null ? String(entry.code) : '';
+    var row = document.createElement('div');
+    row.className = 'version-meta-row';
+    row.innerHTML =
+      '<div class="version-meta-cols">' +
+      '<div class="version-meta-field">' +
+      '<label>版本名称</label>' +
+      '<input type="text" class="vm-name" maxlength="128" placeholder="如：朱紫">' +
+      '</div>' +
+      '<div class="version-meta-field">' +
+      '<label>年份</label>' +
+      '<input type="number" class="vm-year" min="0" max="9999" step="1" placeholder="如：2023">' +
+      '</div>' +
+      '<div class="version-meta-field">' +
+      '<label>扩展编号</label>' +
+      '<input type="text" class="vm-code" maxlength="128" placeholder="如：SV1">' +
+      '</div>' +
+      '</div>' +
+      '<button type="button" class="btn btn-ghost btn-sm vm-rm" title="移除此版本">×</button>';
+    var inpN = row.querySelector('.vm-name');
+    var inpY = row.querySelector('.vm-year');
+    var inpC = row.querySelector('.vm-code');
+    var btnRm = row.querySelector('.vm-rm');
+    if (inpN) inpN.value = name;
+    if (inpY) inpY.value = year;
+    if (inpC) inpC.value = code;
+    if (btnRm) {
+      btnRm.addEventListener('click', function () {
+        row.remove();
+      });
+    }
+    container.appendChild(row);
+  }
+
+  function collectVersionRows(container) {
+    var out = [];
+    if (!container) return out;
+    var rows = container.querySelectorAll('.version-meta-row');
+    rows.forEach(function (row) {
+      var nameEl = row.querySelector('.vm-name');
+      var yearEl = row.querySelector('.vm-year');
+      var codeEl = row.querySelector('.vm-code');
+      var n = nameEl && nameEl.value ? String(nameEl.value).trim() : '';
+      if (!n) return;
+      var o = { name: n };
+      if (yearEl && yearEl.value !== '') {
+        var y = parseInt(yearEl.value, 10);
+        if (!Number.isNaN(y) && y >= 0 && y <= 9999) o.year = y;
+      }
+      if (codeEl && codeEl.value.trim()) o.code = String(codeEl.value).trim();
+      out.push(o);
+    });
+    return out;
+  }
+
+  function addLangRow(lang, versions) {
     if (!pairsContainer) return;
     lang = lang != null ? String(lang) : '';
-    versionText = versionText != null ? String(versionText) : '';
+    versions = Array.isArray(versions) ? versions : [];
     var row = document.createElement('div');
     row.className = 'lang-version-row';
     row.innerHTML =
@@ -117,21 +203,37 @@
       '<input type="text" class="lang-version-input-lang" maxlength="128" placeholder="如：简中" value="">' +
       '</div>' +
       '<div class="lang-version-field lang-version-field--grow">' +
-      '<label>该语言的版本（每行一项）</label>' +
-      '<textarea class="lang-version-ta-ver" rows="4" maxlength="8000" placeholder="朱紫&#10;剑盾"></textarea>' +
+      '<label>该语言的版本（名称 · 年份 · 扩展编号）</label>' +
+      '<div class="version-meta-rows"></div>' +
+      '<button type="button" class="btn btn-secondary btn-sm btn-add-ver-meta">+ 添加版本</button>' +
       '</div>' +
-      '<button type="button" class="btn btn-ghost btn-sm lang-version-remove" title="移除此行">×</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm lang-version-remove" title="移除此语言行">×</button>' +
       '</div>';
     var inp = row.querySelector('.lang-version-input-lang');
-    var ta = row.querySelector('.lang-version-ta-ver');
+    var verList = row.querySelector('.version-meta-rows');
+    var btnAddVer = row.querySelector('.btn-add-ver-meta');
     var btnRm = row.querySelector('.lang-version-remove');
     if (inp) inp.value = lang;
-    if (ta) ta.value = versionText;
+    var norm = versions.map(normalizeVersionEntryLoad).filter(function (e) {
+      return e.name;
+    });
+    if (!norm.length) {
+      addVersionMetaRow(verList, {});
+    } else {
+      norm.forEach(function (e) {
+        addVersionMetaRow(verList, e);
+      });
+    }
+    if (btnAddVer && verList) {
+      btnAddVer.addEventListener('click', function () {
+        addVersionMetaRow(verList, {});
+      });
+    }
     if (btnRm) {
       btnRm.addEventListener('click', function () {
         row.remove();
         if (pairsContainer && !pairsContainer.querySelector('.lang-version-row')) {
-          addLangRow('', '');
+          addLangRow('', []);
         }
       });
     }
@@ -143,7 +245,6 @@
     var taCardStatus = document.getElementById('taCardStatus');
     var taRarity = document.getElementById('taRarity');
     var taCondition = document.getElementById('taCondition');
-    var taVersionLegacy = document.getElementById('taVersionLegacy');
 
     if (Object.prototype.hasOwnProperty.call(raw, 'cardStatus')) {
       taCardStatus.value = arrToLines(raw.cardStatus);
@@ -158,19 +259,31 @@
     var keys = vbl && Object.keys(vbl).length ? Object.keys(vbl) : [];
     if (keys.length) {
       keys.forEach(function (k) {
-        addLangRow(k, arrToLines(vbl[k]));
+        var arr = Array.isArray(vbl[k]) ? vbl[k] : [];
+        addLangRow(k, arr);
       });
     } else if (raw.language && raw.language.length) {
-      var verText = arrToLines(raw.version || []);
+      var verArr = Array.isArray(raw.version) ? raw.version : [];
       raw.language.forEach(function (lang) {
-        addLangRow(lang, verText);
+        addLangRow(lang, verArr);
       });
     } else {
-      addLangRow('', '');
+      addLangRow('', []);
     }
 
-    if (taVersionLegacy) {
-      taVersionLegacy.value = arrToLines(raw.version || []);
+    clearLegacyRows();
+    var leg = Array.isArray(raw.version) ? raw.version : [];
+    var legNorm = leg.map(normalizeVersionEntryLoad).filter(function (e) {
+      return e.name;
+    });
+    if (legacyVersionRows) {
+      if (!legNorm.length) {
+        addVersionMetaRow(legacyVersionRows, {});
+      } else {
+        legNorm.forEach(function (e) {
+          addVersionMetaRow(legacyVersionRows, e);
+        });
+      }
     }
     taRarity.value = arrToLines(raw.rarity);
     taCondition.value = arrToLines(raw.condition);
@@ -183,11 +296,11 @@
     var rows = pairsContainer.querySelectorAll('.lang-version-row');
     rows.forEach(function (row) {
       var inp = row.querySelector('.lang-version-input-lang');
-      var ta = row.querySelector('.lang-version-ta-ver');
+      var verList = row.querySelector('.version-meta-rows');
       var lang = inp && inp.value ? String(inp.value).trim() : '';
       if (!lang) return;
       languages.push(lang);
-      versionByLanguage[lang] = linesToArr(ta ? ta.value : '');
+      versionByLanguage[lang] = collectVersionRows(verList);
     });
     return { language: languages, versionByLanguage: versionByLanguage };
   }
@@ -216,7 +329,12 @@
 
     if (btnAddLangRow) {
       btnAddLangRow.addEventListener('click', function () {
-        addLangRow('', '');
+        addLangRow('', []);
+      });
+    }
+    if (btnAddLegacyVer && legacyVersionRows) {
+      btnAddLegacyVer.addEventListener('click', function () {
+        addVersionMetaRow(legacyVersionRows, {});
       });
     }
 
@@ -228,8 +346,7 @@
         msg.className = 'fd-save-msg';
       }
       var lv = collectLangVersionFromDom();
-      var taVersionLegacy = document.getElementById('taVersionLegacy');
-      var legacyFlat = linesToArr(taVersionLegacy ? taVersionLegacy.value : '');
+      var legacyFlat = collectVersionRows(legacyVersionRows);
       var dropdowns = {
         cardStatus: linesToArr(document.getElementById('taCardStatus').value),
         language: lv.language,

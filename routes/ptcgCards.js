@@ -22,6 +22,7 @@ function toClient(c) {
     year: c.year != null ? c.year : null,
     language: c.language || '',
     version: c.version || '',
+    versionCode: c.versionCode || '',
     rarity: c.rarity || '',
     purchasePrice: c.purchasePrice != null ? c.purchasePrice : 0,
     graded: !!c.graded,
@@ -101,6 +102,7 @@ function normalizeCreate(body) {
       if (b.set != null && String(b.set).trim()) return String(b.set).slice(0, 128);
       return '';
     })(),
+    versionCode: b.versionCode != null ? String(b.versionCode).trim().slice(0, 64) : '',
     rarity: b.rarity != null ? String(b.rarity).slice(0, 64) : '',
     purchasePrice: parsePrice(b.purchasePrice),
     graded: !!b.graded,
@@ -279,6 +281,7 @@ function itemToPayload(item) {
       if (b.set != null && String(b.set).trim()) return String(b.set).slice(0, 128);
       return '';
     })(),
+    versionCode: b.versionCode != null ? String(b.versionCode).trim().slice(0, 64) : '',
     rarity: b.rarity != null ? String(b.rarity).slice(0, 64) : '',
     purchasePrice: parsePrice(b.purchasePrice),
     graded,

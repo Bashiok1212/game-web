@@ -25,6 +25,39 @@ function sanitizeOptions(arr) {
     .slice(0, MAX_OPTS);
 }
 
+/** 版本项：{ name, year?, code? }；兼容旧版纯字符串 */
+function normalizeVersionItem(v) {
+  if (v == null) return null;
+  if (typeof v === 'string') {
+    const name = String(v).trim().slice(0, MAX_LEN);
+    return name ? { name, year: undefined, code: '' } : null;
+  }
+  if (typeof v === 'object' && !Array.isArray(v)) {
+    const name = String(v.name != null ? v.name : '').trim().slice(0, MAX_LEN);
+    if (!name) return null;
+    let year;
+    if (v.year !== undefined && v.year !== null && v.year !== '') {
+      const y = parseInt(v.year, 10);
+      if (!Number.isNaN(y) && y >= 0 && y <= 9999) year = y;
+    }
+    const codeRaw = v.code != null ? v.code : v.versionCode != null ? v.versionCode : '';
+    const code = String(codeRaw).trim().slice(0, MAX_LEN);
+    return { name, year, code };
+  }
+  return null;
+}
+
+function sanitizeVersionList(arr) {
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  for (const v of arr) {
+    const n = normalizeVersionItem(v);
+    if (n) out.push(n);
+    if (out.length >= MAX_OPTS) break;
+  }
+  return out;
+}
+
 function sanitizeVersionByLanguage(obj) {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return {};
   const out = {};
@@ -33,7 +66,7 @@ function sanitizeVersionByLanguage(obj) {
     if (n >= MAX_LANG_KEYS) break;
     const key = String(k).trim().slice(0, MAX_LEN);
     if (!key) continue;
-    out[key] = sanitizeOptions(v);
+    out[key] = sanitizeVersionList(v);
     n += 1;
   }
   return out;
@@ -57,7 +90,7 @@ function getMergedDropdowns(doc) {
     out[LEGACY_VERSION_KEY] = [];
   } else {
     const arr = d[LEGACY_VERSION_KEY];
-    out[LEGACY_VERSION_KEY] = Array.isArray(arr) ? arr : [];
+    out[LEGACY_VERSION_KEY] = Array.isArray(arr) ? sanitizeVersionList(arr) : [];
   }
 
   if (!Object.prototype.hasOwnProperty.call(d, 'versionByLanguage')) {
@@ -81,7 +114,8 @@ function getRawDropdowns(doc) {
     }
   }
   if (Object.prototype.hasOwnProperty.call(d, LEGACY_VERSION_KEY)) {
-    out[LEGACY_VERSION_KEY] = Array.isArray(d[LEGACY_VERSION_KEY]) ? d[LEGACY_VERSION_KEY] : [];
+    const arr = d[LEGACY_VERSION_KEY];
+    out[LEGACY_VERSION_KEY] = Array.isArray(arr) ? sanitizeVersionList(arr) : [];
   }
   if (Object.prototype.hasOwnProperty.call(d, 'versionByLanguage')) {
     const raw = d.versionByLanguage;
@@ -116,7 +150,7 @@ router.put('/field-dropdowns', ptcgAuthMiddleware, async (req, res) => {
     }
 
     merged[LEGACY_VERSION_KEY] =
-      body[LEGACY_VERSION_KEY] !== undefined ? sanitizeOptions(body[LEGACY_VERSION_KEY]) : [];
+      body[LEGACY_VERSION_KEY] !== undefined ? sanitizeVersionList(body[LEGACY_VERSION_KEY]) : [];
 
     merged.versionByLanguage =
       body.versionByLanguage !== undefined ? sanitizeVersionByLanguage(body.versionByLanguage) : {};

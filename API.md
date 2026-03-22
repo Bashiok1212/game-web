@@ -158,7 +158,8 @@
 | `name` | 名称 |
 | `year` | 年份（0～9999，可选） |
 | `language` | 语言 |
-| `version` | 版本（旧版 `set` 可与 `version` 互填，导入时无 `version` 时可用 `set`） |
+| `version` | 版本名称（旧版 `set` 可与 `version` 互填，导入时无 `version` 时可用 `set`） |
+| `versionCode` | 扩展编号（可选，与「编辑字段」中版本配置的扩展编号对应，如扩展代号） |
 | `rarity` | 稀有度 |
 | `purchasePrice` | 购入价（数字，元） |
 | `graded` | 是否评级卡（布尔） |
@@ -174,7 +175,7 @@
 
 #### 现有字段下拉配置（均需 Bearer + `adminId`）
 
-独立页：`/ptcg-fields.html`。为 `language`、`rarity`、`condition`、`cardStatus` 配置选项（每行一项）；**版本**支持 **`versionByLanguage`**：`{ "简中": ["朱紫","剑盾"], "日文": [...] }`，每种语言独立版本列表。另保留 **`version`** 字符串数组作**全局兜底**（未配置 `versionByLanguage` 或旧数据时使用）。某键**未保存过**时，合并接口对该键返回空数组（卡状态除外）；**保存为空数组**表示该字段在录入页用手输。
+独立页：`/ptcg-fields.html`。为 `language`、`rarity`、`condition`、`cardStatus` 配置选项（每行一项）；**版本**支持 **`versionByLanguage`**：每种语言对应一个数组，每项可为**字符串**（仅名称）或对象 **`{ "name": "朱紫", "year": 2023, "code": "SV1" }`**（`year` / `code` 可选）。另保留 **`version`** 作**全局兜底**（格式与上相同，未配置 `versionByLanguage` 或旧数据时使用）。录入页从下拉选版本时，可根据配置自动填充卡牌的年份与 `versionCode`。某键**未保存过**时，合并接口对该键返回空数组（卡状态除外）；**保存为空数组**表示该字段在录入页用手输。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|

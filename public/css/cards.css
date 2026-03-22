@@ -247,6 +247,18 @@ body {
   }
 }
 
+.form-row-4 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 720px) {
+  .form-row-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 .form-row-graded .label-inline {
   display: inline-flex;
   align-items: center;
@@ -887,6 +899,64 @@ body {
   resize: vertical;
   min-height: 88px;
   font-family: inherit;
+}
+
+.version-meta-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+}
+
+.version-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.45rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.version-meta-cols {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 1 1 200px;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.version-meta-field {
+  flex: 1 1 5.5rem;
+  min-width: 0;
+}
+
+.version-meta-field label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.version-meta-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.version-meta-row .vm-rm {
+  flex: 0 0 auto;
+  margin-bottom: 0.15rem;
+}
+
+.btn-add-ver-global {
+  margin-top: 0.35rem;
 }
 
 .lang-version-remove {

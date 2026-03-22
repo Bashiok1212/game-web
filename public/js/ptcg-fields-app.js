@@ -186,6 +186,7 @@
       var nameEl = row.querySelector('.vm-name');
       var yearEl = row.querySelector('.vm-year');
       var codeEl = row.querySelector('.vm-code');
+      var maxEl = row.querySelector('.vm-max');
       var n = nameEl && nameEl.value ? String(nameEl.value).trim() : '';
       if (!n) return;
       var o = { name: n };
@@ -194,6 +195,10 @@
         if (!Number.isNaN(y) && y >= 0 && y <= 9999) o.year = y;
       }
       if (codeEl && codeEl.value.trim()) o.code = String(codeEl.value).trim();
+      if (maxEl && maxEl.value !== '') {
+        var mx = parseInt(maxEl.value, 10);
+        if (!Number.isNaN(mx) && mx >= 1 && mx <= 999999) o.maxNo = mx;
+      }
       out.push(o);
     });
     return out;

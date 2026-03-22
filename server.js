@@ -19,6 +19,7 @@ const chatRoutes = require('./routes/chat');
 const mailRoutes = require('./routes/mail');
 const adminRoutes = require('./routes/admin');
 const ptcgRoutes = require('./routes/ptcg');
+const ptcgCardsRoutes = require('./routes/ptcgCards');
 const miscRoutes = require('./routes/misc');
 const { authMiddleware, JWT_SECRET } = require('./middleware/auth');
 const Character = require('./models/Character');
@@ -63,8 +64,8 @@ app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 
-// 请求体大小限制
-app.use(express.json({ limit: '10kb' }));
+// 请求体大小限制（PTCG 批量导入可能较大）
+app.use(express.json({ limit: '512kb' }));
 
 // CORS：生产环境必须配置具体域名
 const corsOrigin = process.env.CORS_ORIGIN || '*';
@@ -80,6 +81,7 @@ const corsOpts = {
 app.use(cors(corsOpts));
 
 app.use('/api/ptcg', ptcgRoutes);
+app.use('/api/ptcg', ptcgCardsRoutes);
 app.use('/api/admin', adminRoutes);
 async function discardPlayerItemHandler(req, res) {
   const quantity = parseInt(req.query?.quantity ?? req.body?.quantity ?? 0, 10);

@@ -13,6 +13,12 @@ mongoose.connection.on('connected', async () => {
   mongoose.connection.collection('festivals').dropIndex('key_1').catch((err) => {
     if (err.code !== 27) console.error('drop key_1 index:', err.message);
   });
+  try {
+    const { syncPtcgEnvUser } = require('../scripts/sync-ptcg-env');
+    await syncPtcgEnvUser();
+  } catch (e) {
+    console.error('syncPtcgEnvUser:', e.message);
+  }
 });
 
 module.exports = mongoose;

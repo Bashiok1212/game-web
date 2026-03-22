@@ -2,7 +2,7 @@
   'use strict';
 
   var TOKEN_KEY = 'ptcg_token';
-  var STORAGE_KEY = 'personalCards_v1';
+  var LEGACY_STORAGE = 'personalCards_v1';
 
   var authPanel = document.getElementById('ptcgAuth');
   var appPanel = document.getElementById('ptcgApp');
@@ -14,6 +14,30 @@
   var registerPanel = document.getElementById('ptcgRegisterPanel');
   var registerForm = document.getElementById('ptcgRegisterForm');
   var registerErr = document.getElementById('ptcgRegisterErr');
+
+  var cardsCache = [];
+
+  function getToken() {
+    try {
+      return sessionStorage.getItem(TOKEN_KEY) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function setToken(t) {
+    try {
+      if (t) sessionStorage.setItem(TOKEN_KEY, t);
+      else sessionStorage.removeItem(TOKEN_KEY);
+    } catch (e) {}
+  }
+
+  function authHeaders() {
+    var t = getToken();
+    var h = { 'Content-Type': 'application/json' };
+    if (t) h.Authorization = 'Bearer ' + t;
+    return h;
+  }
 
   function switchTab(tab) {
     if (!loginPanel || !registerPanel) return;
@@ -44,21 +68,6 @@
   function showApp() {
     if (authPanel) authPanel.classList.add('hidden');
     if (appPanel) appPanel.classList.remove('hidden');
-  }
-
-  function getToken() {
-    try {
-      return sessionStorage.getItem(TOKEN_KEY) || '';
-    } catch (e) {
-      return '';
-    }
-  }
-
-  function setToken(t) {
-    try {
-      if (t) sessionStorage.setItem(TOKEN_KEY, t);
-      else sessionStorage.removeItem(TOKEN_KEY);
-    } catch (e) {}
   }
 
   function verifyToken() {
@@ -102,7 +111,7 @@
       })
         .then(function (r) {
           return r.json().then(function (data) {
-            return { ok: r.ok, status: r.status, data: data };
+            return { ok: r.ok, data: data };
           });
         })
         .then(function (res) {
@@ -187,25 +196,6 @@
   }
 
   function initCardsApp() {
-    function loadCards() {
-      try {
-        var raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return [];
-        var data = JSON.parse(raw);
-        return Array.isArray(data) ? data : [];
-      } catch (e) {
-        return [];
-      }
-    }
-
-    function saveCards(list) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    }
-
-    function uid() {
-      return 'c_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 9);
-    }
-
     var listEl = document.getElementById('cardsList');
     var emptyEl = document.getElementById('cardsEmpty');
     var searchEl = document.getElementById('cardSearch');
@@ -220,11 +210,57 @@
 
     if (!listEl || !form) return;
 
+    function fetchCards() {
+      return fetch('/api/ptcg/cards', { headers: authHeaders(), credentials: 'same-origin' })
+        .then(function (r) {
+          if (r.status === 401) {
+            setToken('');
+            showAuth();
+            throw new Error('unauthorized');
+          }
+          if (!r.ok) throw new Error('load');
+          return r.json();
+        })
+        .then(function (data) {
+          cardsCache = data.cards || [];
+        });
+    }
+
+    function maybeMigrateLocal() {
+      try {
+        var raw = localStorage.getItem(LEGACY_STORAGE);
+        if (!raw || cardsCache.length > 0) return Promise.resolve();
+        var old = JSON.parse(raw);
+        if (!Array.isArray(old) || old.length === 0) return Promise.resolve();
+        var items = old.map(function (c) {
+          return {
+            name: c.name,
+            set: c.set || '',
+            quantity: c.quantity != null ? c.quantity : 1,
+            condition: c.condition || '',
+            notes: c.notes || '',
+          };
+        });
+        return fetch('/api/ptcg/cards/import', {
+          method: 'POST',
+          headers: authHeaders(),
+          credentials: 'same-origin',
+          body: JSON.stringify({ items: items }),
+        }).then(function (r) {
+          if (r.ok) {
+            localStorage.removeItem(LEGACY_STORAGE);
+            return fetchCards();
+          }
+        });
+      } catch (e) {
+        return Promise.resolve();
+      }
+    }
+
     function getFiltered() {
-      var all = loadCards();
       var q = (searchEl.value || '').trim().toLowerCase();
-      if (!q) return all;
-      return all.filter(function (c) {
+      if (!q) return cardsCache.slice();
+      return cardsCache.filter(function (c) {
         var blob = [c.name, c.set, c.condition, c.notes].join(' ').toLowerCase();
         return blob.indexOf(q) !== -1;
       });
@@ -235,7 +271,7 @@
       listEl.innerHTML = '';
       if (cards.length === 0) {
         emptyEl.classList.toggle('hidden', false);
-        if (loadCards().length > 0) emptyEl.textContent = '没有匹配的卡牌，换个关键词试试。';
+        if (cardsCache.length > 0) emptyEl.textContent = '没有匹配的卡牌，换个关键词试试。';
         else emptyEl.textContent = '暂无卡牌，点击「添加卡牌」开始。';
         return;
       }
@@ -289,28 +325,48 @@
 
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      var all = loadCards();
       var id = editId.value;
-      var rec = {
-        id: id || uid(),
+      var payload = {
         name: fName.value.trim(),
         set: fSet.value.trim(),
         quantity: Math.max(0, parseInt(fQty.value, 10) || 0),
         condition: fCondition.value.trim(),
         notes: fNotes.value.trim(),
-        updatedAt: new Date().toISOString()
       };
-      if (!rec.name) return;
+      if (!payload.name) return;
+
+      var url = '/api/ptcg/cards';
+      var method = 'POST';
       if (id) {
-        var idx = all.findIndex(function (x) { return x.id === id; });
-        if (idx >= 0) all[idx] = rec;
-      } else {
-        rec.createdAt = rec.updatedAt;
-        all.push(rec);
+        url = '/api/ptcg/cards/' + encodeURIComponent(id);
+        method = 'PUT';
       }
-      saveCards(all);
-      closeForm();
-      render();
+
+      fetch(url, {
+        method: method,
+        headers: authHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      })
+        .then(function (r) {
+          if (r.status === 401) {
+            setToken('');
+            showAuth();
+            throw new Error('unauthorized');
+          }
+          if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || 'save'); });
+          return r.json();
+        })
+        .then(function () {
+          return fetchCards();
+        })
+        .then(function () {
+          closeForm();
+          render();
+        })
+        .catch(function (err) {
+          if (err.message !== 'unauthorized') alert(err.message || '保存失败');
+        });
     });
 
     listEl.addEventListener('click', function (e) {
@@ -318,13 +374,30 @@
       if (!btn) return;
       var id = btn.closest('.card-item').dataset.id;
       var act = btn.getAttribute('data-act');
-      var all = loadCards();
-      var card = all.find(function (x) { return x.id === id; });
+      var card = cardsCache.find(function (x) { return x.id === id; });
       if (act === 'edit' && card) openForm(card);
       if (act === 'del' && card) {
         if (!confirm('确定删除「' + (card.name || '该卡牌') + '」？')) return;
-        saveCards(all.filter(function (x) { return x.id !== id; }));
-        render();
+        fetch('/api/ptcg/cards/' + encodeURIComponent(id), {
+          method: 'DELETE',
+          headers: authHeaders(),
+          credentials: 'same-origin',
+        })
+          .then(function (r) {
+            if (r.status === 401) {
+              setToken('');
+              showAuth();
+              return;
+            }
+            if (!r.ok) throw new Error();
+            return fetchCards();
+          })
+          .then(function () {
+            render();
+          })
+          .catch(function () {
+            alert('删除失败');
+          });
       }
     });
 
@@ -333,11 +406,10 @@
     });
 
     document.getElementById('btnExport').addEventListener('click', function () {
-      var data = loadCards();
-      var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      var blob = new Blob([JSON.stringify(cardsCache, null, 2)], { type: 'application/json' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'cards-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+      a.download = 'ptcg-cards-' + new Date().toISOString().slice(0, 10) + '.json';
       a.click();
       URL.revokeObjectURL(a.href);
     });
@@ -351,28 +423,31 @@
         try {
           var data = JSON.parse(reader.result);
           if (!Array.isArray(data)) throw new Error('格式应为数组');
-          var merged = loadCards();
-          var ids = {};
-          merged.forEach(function (x) { ids[x.id] = true; });
-          data.forEach(function (item) {
-            if (!item || typeof item !== 'object') return;
-            if (!item.name) return;
-            if (!item.id || ids[item.id]) item.id = uid();
-            ids[item.id] = true;
-            merged.push({
-              id: item.id,
-              name: String(item.name).slice(0, 128),
-              set: item.set != null ? String(item.set).slice(0, 128) : '',
-              quantity: Math.max(0, parseInt(item.quantity, 10) || 0) || 1,
-              condition: item.condition != null ? String(item.condition).slice(0, 64) : '',
-              notes: item.notes != null ? String(item.notes).slice(0, 2000) : '',
-              createdAt: item.createdAt || new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+          fetch('/api/ptcg/cards/import', {
+            method: 'POST',
+            headers: authHeaders(),
+            credentials: 'same-origin',
+            body: JSON.stringify({ items: data }),
+          })
+            .then(function (r) {
+              if (r.status === 401) {
+                setToken('');
+                showAuth();
+                return;
+              }
+              if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || '导入失败'); });
+              return r.json();
+            })
+            .then(function (res) {
+              if (!res) return;
+              return fetchCards().then(function () {
+                render();
+                alert('导入完成：新增 ' + (res.created || 0) + '，更新 ' + (res.updated || 0));
+              });
+            })
+            .catch(function (err) {
+              alert(err.message || '导入失败');
             });
-          });
-          saveCards(merged);
-          render();
-          alert('导入完成，共 ' + merged.length + ' 条记录。');
         } catch (err) {
           alert('导入失败：' + (err.message || '无效 JSON'));
         }
@@ -380,7 +455,16 @@
       reader.readAsText(file, 'UTF-8');
     });
 
-    render();
+    fetchCards()
+      .then(function () {
+        return maybeMigrateLocal();
+      })
+      .then(function () {
+        render();
+      })
+      .catch(function () {
+        emptyEl.textContent = '加载失败，请重新登录。';
+      });
   }
 
   boot();

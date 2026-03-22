@@ -1,8 +1,7 @@
 /**
- * PTCG 个人卡牌页：MongoDB 管理员账号 + 可选 .env 兼容登录
- * 环境变量：
- * - PTCG_ADMIN_USER / PTCG_ADMIN_PASSWORD：无 Mongo 账号时的备用登录（可选）
- * - PTCG_REGISTER_SECRET：若设置，任何注册请求都必须带相同 registerSecret；未设置时仅允许首个账号注册
+ * PTCG 个人卡牌页：MongoDB 管理员账号
+ * PTCG_REGISTER_SECRET：若设置，注册须带密钥；未设置时仅允许首个账号
+ * PTCG_ADMIN_USER / PTCG_ADMIN_PASSWORD：由 scripts/sync-ptcg-env.js 在启动时同步到 MongoDB
  */
 const express = require('express');
 const crypto = require('crypto');
@@ -20,9 +19,9 @@ function safeCompare(a, b) {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-function issueToken(res) {
+function issueToken(res, adminId) {
   const token = jwt.sign(
-    { sub: 'ptcg', role: 'ptcg_admin' },
+    { sub: 'ptcg', role: 'ptcg_admin', adminId: String(adminId) },
     JWT_SECRET,
     { expiresIn: '7d' }
   );
@@ -63,11 +62,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: '用户名已存在' });
     }
 
-    await PtcgAdmin.create({
+    const doc = await PtcgAdmin.create({
       username: u,
       password_hash: bcrypt.hashSync(password, 12),
     });
-    res.json({ ok: true, message: '注册成功，请登录' });
+    res.json({ ok: true, message: '注册成功，请登录', adminId: doc._id.toString() });
   } catch (e) {
     if (e.code === 11000) {
       return res.status(400).json({ error: '用户名已存在' });
@@ -77,7 +76,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-/** POST /api/ptcg/login */
+/** POST /api/ptcg/login — 仅 MongoDB 中账号（.env 账号由启动时同步） */
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body || {};
@@ -86,27 +85,20 @@ router.post('/login', async (req, res) => {
     }
     const u = String(username).trim().toLowerCase();
     const doc = await PtcgAdmin.findOne({ username: u }).select('+password_hash');
-    if (doc) {
-      if (!bcrypt.compareSync(password, doc.password_hash)) {
-        return res.status(401).json({ error: '用户名或密码错误' });
+    if (!doc) {
+      const hasAny = await PtcgAdmin.countDocuments();
+      if (!hasAny) {
+        return res.status(503).json({
+          error:
+            '尚未有管理员：请先注册账号，或配置 .env 中 PTCG_ADMIN_USER / PTCG_ADMIN_PASSWORD 并重启服务以同步到数据库',
+        });
       }
-      return issueToken(res);
+      return res.status(401).json({ error: '用户名或密码错误' });
     }
-
-    const envUser = (process.env.PTCG_ADMIN_USER || '').trim().toLowerCase();
-    const envPass = process.env.PTCG_ADMIN_PASSWORD || '';
-    if (envUser && envPass && safeCompare(u, envUser) && safeCompare(String(password), envPass)) {
-      return issueToken(res);
+    if (!bcrypt.compareSync(password, doc.password_hash)) {
+      return res.status(401).json({ error: '用户名或密码错误' });
     }
-
-    const hasAny = await PtcgAdmin.countDocuments();
-    if (!hasAny && !envUser) {
-      return res.status(503).json({
-        error:
-          '尚未配置管理员：请先注册账号，或在 .env 设置 PTCG_ADMIN_USER / PTCG_ADMIN_PASSWORD',
-      });
-    }
-    return res.status(401).json({ error: '用户名或密码错误' });
+    return issueToken(res, doc._id);
   } catch (e) {
     console.error('ptcg login error', e);
     res.status(500).json({ error: '登录失败' });
@@ -122,10 +114,10 @@ router.get('/verify', (req, res) => {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.role !== 'ptcg_admin' || decoded.sub !== 'ptcg') {
-      return res.status(403).json({ error: '无效令牌' });
+    if (decoded.role !== 'ptcg_admin' || decoded.sub !== 'ptcg' || !decoded.adminId) {
+      return res.status(403).json({ error: '无效令牌，请重新登录' });
     }
-    res.json({ ok: true });
+    res.json({ ok: true, adminId: decoded.adminId });
   } catch (e) {
     return res.status(401).json({ error: '令牌无效或已过期' });
   }

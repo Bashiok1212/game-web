@@ -99,7 +99,8 @@
 
 ### 1.5 PTCG 个人卡牌页（独立管理员）
 
-用于 `/ptcg.html`，与游戏账号无关。管理员账号存 **MongoDB**（集合 `PtcgAdmin`）；可选在 `.env` 配置 `PTCG_ADMIN_USER` / `PTCG_ADMIN_PASSWORD` 作为备用登录。
+用于 `/ptcg.html`，与游戏账号无关。管理员账号存 **MongoDB**（集合 `PtcgAdmin`）。卡牌存 **MongoDB**（集合 `PtcgCard`，字段 `admin` 关联 `PtcgAdmin`）。  
+`.env` 中 `PTCG_ADMIN_USER` / `PTCG_ADMIN_PASSWORD` 由启动时脚本同步到库，**登录仅校验库中账号**。
 
 **POST /api/ptcg/register**
 
@@ -116,18 +117,30 @@
 
 请求体：`{ "username": "string", "password": "string" }`
 
-- 优先匹配 MongoDB 中账号；否则尝试 `.env` 备用账号。
+- 仅校验 MongoDB 中 `PtcgAdmin`（`.env` 账号需已同步到库）。
 
-**成功 (200)**：`{ "ok": true, "token": "<JWT>" }`（约 7 天有效）
+**成功 (200)**：`{ "ok": true, "token": "<JWT>" }`（约 7 天有效；载荷含 `adminId`，用于卡牌接口）
 
-**失败**：400 / 401 / 503（无任何账号且未配置备用时）
+**失败**：400 / 401 / 503（库中无任何管理员时，提示注册或配置 `.env` 并重启）
 
 **GET /api/ptcg/verify**
 
 请求头：`Authorization: Bearer <token>`
 
-**成功 (200)**：`{ "ok": true }`  
-**失败**：401 / 403
+**成功 (200)**：`{ "ok": true, "adminId": "<id>" }`  
+**失败**：401 / 403（旧 token 无 `adminId` 时需重新登录）
+
+#### 卡牌（均需 `Authorization: Bearer <token>`，且 token 须含 `adminId`）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/ptcg/cards` | 当前管理员的卡牌列表 |
+| POST | `/api/ptcg/cards` | 新增单条（body：`name`, `set`, `quantity`, `condition`, `notes`） |
+| PUT | `/api/ptcg/cards/:id` | 更新 |
+| DELETE | `/api/ptcg/cards/:id` | 删除 |
+| POST | `/api/ptcg/cards/import` | 批量导入（body：`{ "cards": [ ... ] }`，与导出 JSON 结构兼容） |
+
+列表项字段示例：`id`, `name`, `set`, `quantity`, `condition`, `notes`, `createdAt`, `updatedAt`。
 
 ---
 

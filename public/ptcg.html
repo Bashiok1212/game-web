@@ -57,7 +57,7 @@
     <header class="cards-header cards-header-row cards-header--hero">
       <div>
         <h1>PTCG 个人卡牌管理</h1>
-        <p class="cards-sub">每条记录对应<strong>一张独立卡牌</strong>；多张请添加多条。在「编辑字段」配置下拉；语言与版本联动时请先选语言再选版本。</p>
+        <p class="cards-sub">每条记录对应<strong>一张独立卡牌</strong>；多张请添加多条。列表可登记<strong>入库/出库</strong>并查看<strong>出入库明细</strong>。在「编辑字段」配置下拉；语言与版本联动时请先选语言再选版本。</p>
       </div>
       <button type="button" id="btnPtcgLogout" class="btn btn-ghost btn-sm">退出登录</button>
     </header>
@@ -66,6 +66,7 @@
       <input type="search" id="cardSearch" class="cards-search" placeholder="搜索编号、名称、年份、语言、版本、稀有度、状态…" autocomplete="off">
       <div class="cards-actions">
         <a href="ptcg-fields.html" class="btn btn-secondary">编辑字段</a>
+        <button type="button" id="btnStockLedger" class="btn btn-secondary">出入库明细</button>
         <button type="button" id="btnAddCard" class="btn btn-primary">添加卡牌</button>
         <button type="button" id="btnExport" class="btn btn-secondary">导出 JSON</button>
         <label class="btn btn-secondary btn-file">
@@ -201,6 +202,7 @@
               <th scope="col">品相</th>
               <th scope="col">状态</th>
               <th scope="col">备注</th>
+              <th class="cards-th-stock" scope="col">入出</th>
               <th class="cards-th-actions" scope="col">操作</th>
             </tr>
           </thead>
@@ -208,6 +210,67 @@
         </table>
       </div>
     </section>
+  </div>
+
+  <!-- 单卡入库 / 出库登记 -->
+  <div id="stockMoveModal" class="ptcg-modal hidden" aria-hidden="true">
+    <div class="ptcg-modal-backdrop" id="stockMoveBackdrop"></div>
+    <div class="ptcg-modal-panel" role="dialog" aria-labelledby="stockMoveTitle">
+      <h3 class="ptcg-modal-title" id="stockMoveTitle">入库 / 出库登记</h3>
+      <p id="stockMoveMeta" class="ptcg-modal-desc"></p>
+      <form id="stockMoveForm">
+        <input type="hidden" id="smCardId" value="">
+        <div class="form-row">
+          <label for="smType">类型</label>
+          <select id="smType" required>
+            <option value="in">入库</option>
+            <option value="out">出库</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="smNote">备注</label>
+          <textarea id="smNote" rows="3" maxlength="500" placeholder="如：购入渠道、售出对象、寄售方等"></textarea>
+        </div>
+        <div class="form-row sm-sync-row">
+          <label class="label-inline">
+            <input type="checkbox" id="smSyncStatus" checked> 同步更新「卡状态」为
+          </label>
+          <input type="text" id="smCardStatus" maxlength="32" placeholder="在库 / 已售">
+        </div>
+        <p id="smErr" class="ptcg-login-err" role="alert"></p>
+        <div class="ptcg-modal-actions">
+          <button type="submit" class="btn btn-primary">确认登记</button>
+          <button type="button" class="btn btn-ghost" id="smCancel">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 全部出入库明细 -->
+  <div id="ledgerModal" class="ptcg-modal hidden" aria-hidden="true">
+    <div class="ptcg-modal-backdrop" id="ledgerBackdrop"></div>
+    <div class="ptcg-modal-panel ptcg-modal-panel--wide" role="dialog" aria-labelledby="ledgerTitle">
+      <h3 class="ptcg-modal-title" id="ledgerTitle">出入库明细</h3>
+      <p id="ledgerHint" class="ptcg-modal-desc">按时间倒序；每条对应一张卡牌上的一次操作。</p>
+      <div class="stock-log-table-wrap">
+        <table class="stock-log-table" aria-label="出入库明细">
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>编号</th>
+              <th>名称</th>
+              <th>类型</th>
+              <th>备注</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerTbody"></tbody>
+        </table>
+      </div>
+      <p id="ledgerEmpty" class="form-hint hidden">暂无记录。</p>
+      <div class="ptcg-modal-actions">
+        <button type="button" class="btn btn-primary" id="ledgerClose">关闭</button>
+      </div>
+    </div>
   </div>
 
   <script src="js/cards-app.js"></script>

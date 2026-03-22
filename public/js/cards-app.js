@@ -254,6 +254,23 @@
     var dropdownConfig = {};
     var tableWrap = document.getElementById('cardsTableWrap');
 
+    var stockMoveModal = document.getElementById('stockMoveModal');
+    var stockMoveForm = document.getElementById('stockMoveForm');
+    var smCardId = document.getElementById('smCardId');
+    var smType = document.getElementById('smType');
+    var smNote = document.getElementById('smNote');
+    var smSyncStatus = document.getElementById('smSyncStatus');
+    var smCardStatus = document.getElementById('smCardStatus');
+    var smErr = document.getElementById('smErr');
+    var smCancel = document.getElementById('smCancel');
+    var stockMoveBackdrop = document.getElementById('stockMoveBackdrop');
+    var ledgerModal = document.getElementById('ledgerModal');
+    var ledgerTbody = document.getElementById('ledgerTbody');
+    var ledgerEmpty = document.getElementById('ledgerEmpty');
+    var ledgerBackdrop = document.getElementById('ledgerBackdrop');
+    var ledgerClose = document.getElementById('ledgerClose');
+    var btnStockLedger = document.getElementById('btnStockLedger');
+
     if (!listEl || !form) return;
 
     function syncGradedUi() {
@@ -729,6 +746,13 @@
         tr.appendChild(tdText(c.cardStatus, ''));
         tr.appendChild(tdNotes(c.notes));
 
+        var tdStock = document.createElement('td');
+        tdStock.className = 'cards-td-stock';
+        tdStock.innerHTML =
+          '<button type="button" class="btn btn-secondary btn-sm" data-act="stock-in">入</button> ' +
+          '<button type="button" class="btn btn-secondary btn-sm" data-act="stock-out">出</button>';
+        tr.appendChild(tdStock);
+
         var tdAct = document.createElement('td');
         tdAct.className = 'cards-td-actions';
         tdAct.innerHTML =
@@ -835,6 +859,168 @@
       }
     });
 
+    function closeStockMoveModal() {
+      if (!stockMoveModal) return;
+      stockMoveModal.classList.add('hidden');
+      stockMoveModal.setAttribute('aria-hidden', 'true');
+    }
+
+    function openStockMoveModal(card, preset) {
+      if (!stockMoveModal || !smCardId || !smType) return;
+      smCardId.value = card.id;
+      smType.value = preset === 'out' ? 'out' : 'in';
+      if (smNote) smNote.value = '';
+      if (smErr) smErr.textContent = '';
+      if (smSyncStatus) smSyncStatus.checked = true;
+      if (smCardStatus) {
+        smCardStatus.value = preset === 'out' ? '已售' : '在库';
+      }
+      var meta = document.getElementById('stockMoveMeta');
+      if (meta) {
+        var no = card.cardNo != null ? '#' + card.cardNo + ' ' : '';
+        meta.textContent = no + (card.name || '（未命名）');
+      }
+      stockMoveModal.classList.remove('hidden');
+      stockMoveModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeLedgerModal() {
+      if (!ledgerModal) return;
+      ledgerModal.classList.add('hidden');
+      ledgerModal.setAttribute('aria-hidden', 'true');
+    }
+
+    function openLedgerModal() {
+      if (!ledgerModal || !ledgerTbody) return;
+      var hintEl = document.getElementById('ledgerHint');
+      if (hintEl) {
+        hintEl.textContent = '按时间倒序；每条对应一张卡牌上的一次操作。';
+      }
+      ledgerTbody.innerHTML = '';
+      if (ledgerEmpty) {
+        ledgerEmpty.textContent = '暂无记录。';
+        ledgerEmpty.classList.add('hidden');
+      }
+      ledgerModal.classList.remove('hidden');
+      ledgerModal.setAttribute('aria-hidden', 'false');
+
+      fetch('/api/ptcg/stock-movements?limit=200', {
+        headers: authHeaders(),
+        credentials: 'same-origin',
+      })
+        .then(function (r) {
+          if (r.status === 401) {
+            setToken('');
+            showAuth();
+            throw new Error('unauthorized');
+          }
+          if (!r.ok) throw new Error('load');
+          return r.json();
+        })
+        .then(function (data) {
+          var rows = (data && data.movements) || [];
+          if (rows.length === 0) {
+            if (ledgerEmpty) ledgerEmpty.classList.remove('hidden');
+            return;
+          }
+          var hint = document.getElementById('ledgerHint');
+          if (hint && data.total != null) {
+            hint.textContent = '共 ' + data.total + ' 条（本页最多 ' + rows.length + ' 条）';
+          }
+          rows.forEach(function (m) {
+            var tr = document.createElement('tr');
+            var t = m.createdAt || '';
+            try {
+              if (t) t = new Date(t).toLocaleString('zh-CN');
+            } catch (e) {}
+            var typeLabel = m.type === 'out' ? '出库' : '入库';
+            var no = m.cardNo != null ? String(m.cardNo) : '—';
+            var name = m.cardName || '—';
+            var note = (m.note || '').trim() || '—';
+            tr.innerHTML =
+              '<td>' +
+              escapeHtml(t) +
+              '</td><td class="cards-td-num">' +
+              escapeHtml(no) +
+              '</td><td>' +
+              escapeHtml(name) +
+              '</td><td>' +
+              typeLabel +
+              '</td><td class="cards-td-notes">' +
+              escapeHtml(note) +
+              '</td>';
+            ledgerTbody.appendChild(tr);
+          });
+        })
+        .catch(function () {
+          if (ledgerEmpty) {
+            ledgerEmpty.textContent = '加载失败';
+            ledgerEmpty.classList.remove('hidden');
+          }
+        });
+    }
+
+    function escapeHtml(s) {
+      var d = document.createElement('div');
+      d.textContent = s != null ? String(s) : '';
+      return d.innerHTML;
+    }
+
+    if (stockMoveForm) {
+      stockMoveForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (smErr) smErr.textContent = '';
+        var cid = smCardId ? smCardId.value : '';
+        if (!cid) return;
+        var body = {
+          type: smType && smType.value === 'out' ? 'out' : 'in',
+          note: smNote ? smNote.value.trim() : '',
+        };
+        if (smSyncStatus && smSyncStatus.checked && smCardStatus && smCardStatus.value.trim()) {
+          body.cardStatus = smCardStatus.value.trim();
+        }
+        fetch('/api/ptcg/cards/' + encodeURIComponent(cid) + '/stock-movement', {
+          method: 'POST',
+          headers: authHeaders(),
+          credentials: 'same-origin',
+          body: JSON.stringify(body),
+        })
+          .then(function (r) {
+            if (r.status === 401) {
+              setToken('');
+              showAuth();
+              throw new Error('unauthorized');
+            }
+            if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || '登记失败'); });
+            return r.json();
+          })
+          .then(function () {
+            closeStockMoveModal();
+            return fetchCards();
+          })
+          .then(function () {
+            render();
+          })
+          .catch(function (err) {
+            if (err.message !== 'unauthorized' && smErr) {
+              smErr.textContent = err.message || '登记失败';
+            }
+          });
+      });
+    }
+
+    if (smCancel) smCancel.addEventListener('click', closeStockMoveModal);
+    if (stockMoveBackdrop) stockMoveBackdrop.addEventListener('click', closeStockMoveModal);
+    if (ledgerClose) ledgerClose.addEventListener('click', closeLedgerModal);
+    if (ledgerBackdrop) ledgerBackdrop.addEventListener('click', closeLedgerModal);
+    if (btnStockLedger) btnStockLedger.addEventListener('click', openLedgerModal);
+
+    if (smType && smCardStatus) {
+      smType.addEventListener('change', function () {
+        smCardStatus.value = smType.value === 'out' ? '已售' : '在库';
+      });
+    }
+
     listEl.addEventListener('click', function (e) {
       var btn = e.target.closest('button');
       if (!btn) return;
@@ -843,6 +1029,8 @@
       var id = row.dataset.id;
       var act = btn.getAttribute('data-act');
       var card = cardsCache.find(function (x) { return x.id === id; });
+      if (act === 'stock-in' && card) openStockMoveModal(card, 'in');
+      if (act === 'stock-out' && card) openStockMoveModal(card, 'out');
       if (act === 'edit' && card) openForm(card);
       if (act === 'del' && card) {
         var label = card.cardNo != null ? '#' + card.cardNo + ' ' : '';

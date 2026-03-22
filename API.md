@@ -140,6 +140,16 @@
 | DELETE | `/api/ptcg/cards/:id` | 删除 |
 | POST | `/api/ptcg/cards/import` | 批量导入（body：`{ "items": [ ... ] }` 或直接数组，与导出 JSON 兼容） |
 
+#### 入库 / 出库登记（每张卡可多次登记，不产生「张数」）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/ptcg/cards/:id/stock-movement` | body：`{ "type": "in" \| "out", "note": "<可选>", "cardStatus": "<可选>" }`。若提供 `cardStatus` 则同时更新该卡的「卡状态」字段 |
+| GET | `/api/ptcg/cards/:id/stock-movements` | 单张卡的历史登记；query：`limit`（默认 100，最大 200） |
+| GET | `/api/ptcg/stock-movements` | 当前管理员**全部**出入库明细；query：`limit`、`skip`、`cardId`（可选，筛选某张卡） |
+
+**成功**：`POST` 返回 `{ "ok": true, "movement": { "id", "type", "note", "createdAt", "cardId", "cardNo", "cardName" } }`；列表类接口返回 `{ "movements": [ ... ] }`，全局明细另含 `total`。
+
 **卡牌字段**（`name` 必填；`cardNo` 为保存后自动生成序号，仅列表展示）：
 
 | 字段 | 说明 |

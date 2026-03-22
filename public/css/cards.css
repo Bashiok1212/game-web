@@ -520,7 +520,7 @@ body {
 
 .cards-table {
   width: 100%;
-  min-width: 1080px;
+  min-width: 1180px;
   border-collapse: collapse;
   font-size: 0.82rem;
   line-height: 1.35;
@@ -550,6 +550,11 @@ body {
 
 .cards-th-num {
   text-align: right;
+}
+
+.cards-th-stock {
+  width: 88px;
+  white-space: nowrap;
 }
 
 .cards-th-actions {
@@ -625,9 +630,94 @@ body {
   max-width: none;
 }
 
+.cards-td-stock {
+  white-space: nowrap;
+  max-width: none;
+}
+
+.cards-td-stock .btn {
+  padding: 0.18rem 0.4rem;
+  font-size: 0.72rem;
+}
+
 .cards-td-actions .btn {
   padding: 0.2rem 0.45rem;
   font-size: 0.75rem;
+}
+
+.ptcg-modal-panel--wide {
+  max-width: 720px;
+}
+
+.stock-log-table-wrap {
+  overflow-x: auto;
+  max-height: 55vh;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.stock-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.stock-log-table th,
+.stock-log-table td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.stock-log-table thead th {
+  background: var(--bg);
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.stock-log-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ptcg-modal-panel input[type="text"],
+.ptcg-modal-panel input[type="number"],
+.ptcg-modal-panel select,
+.ptcg-modal-panel textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.sm-sync-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sm-sync-row .label-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.sm-sync-row #smCardStatus {
+  flex: 1 1 140px;
+  min-width: 120px;
+  max-width: 220px;
 }
 
 .cards-list-section {

@@ -3,6 +3,7 @@
 
   var TOKEN_KEY = 'ptcg_token';
   var LEGACY_STORAGE = 'personalCards_v1';
+  var IMAGE_FILE_MAX = 450000;
 
   var authPanel = document.getElementById('ptcgAuth');
   var appPanel = document.getElementById('ptcgApp');
@@ -195,6 +196,32 @@
     });
   }
 
+  function cardSearchBlob(c) {
+    var parts = [
+      c.cardNo,
+      c.name,
+      c.year,
+      c.language,
+      c.version,
+      c.rarity,
+      c.purchasePrice,
+      c.graded ? '评级' : '',
+      c.gradingCompany,
+      c.gradingNumber,
+      c.condition,
+      c.notes,
+      c.cardStatus,
+      c.set,
+      c.quantity,
+    ];
+    return parts
+      .filter(function (x) {
+        return x != null && x !== '';
+      })
+      .join(' ')
+      .toLowerCase();
+  }
+
   function initCardsApp() {
     var listEl = document.getElementById('cardsList');
     var emptyEl = document.getElementById('cardsEmpty');
@@ -202,13 +229,100 @@
     var formWrap = document.getElementById('cardFormWrap');
     var form = document.getElementById('cardForm');
     var editId = document.getElementById('editId');
+    var cardNoHint = document.getElementById('cardNoHint');
     var fName = document.getElementById('fName');
-    var fSet = document.getElementById('fSet');
-    var fQty = document.getElementById('fQty');
+    var fYear = document.getElementById('fYear');
+    var fLanguage = document.getElementById('fLanguage');
+    var fVersion = document.getElementById('fVersion');
+    var fRarity = document.getElementById('fRarity');
+    var fPurchasePrice = document.getElementById('fPurchasePrice');
+    var fGraded = document.getElementById('fGraded');
+    var gradedFields = document.getElementById('gradedFields');
+    var fGradingCompany = document.getElementById('fGradingCompany');
+    var fGradingNumber = document.getElementById('fGradingNumber');
     var fCondition = document.getElementById('fCondition');
+    var fCardStatus = document.getElementById('fCardStatus');
     var fNotes = document.getElementById('fNotes');
+    var fImageUrl = document.getElementById('fImageUrl');
+    var fImageFile = document.getElementById('fImageFile');
+    var fImage = document.getElementById('fImage');
+    var fImagePreview = document.getElementById('fImagePreview');
+    var btnClearImage = document.getElementById('btnClearImage');
 
     if (!listEl || !form) return;
+
+    function syncGradedUi() {
+      var on = fGraded && fGraded.checked;
+      if (gradedFields) gradedFields.classList.toggle('hidden', !on);
+    }
+
+    if (fGraded) {
+      fGraded.addEventListener('change', syncGradedUi);
+    }
+
+    function showImagePreview(src) {
+      if (!fImagePreview) return;
+      if (!src) {
+        fImagePreview.classList.add('hidden');
+        fImagePreview.innerHTML = '';
+        if (btnClearImage) btnClearImage.classList.add('hidden');
+        return;
+      }
+      fImagePreview.classList.remove('hidden');
+      fImagePreview.innerHTML = '';
+      var img = document.createElement('img');
+      img.alt = '预览';
+      img.src = src;
+      fImagePreview.appendChild(img);
+      if (btnClearImage) btnClearImage.classList.remove('hidden');
+    }
+
+    function clearImageFields() {
+      if (fImage) fImage.value = '';
+      if (fImageUrl) fImageUrl.value = '';
+      if (fImageFile) fImageFile.value = '';
+      showImagePreview('');
+    }
+
+    if (btnClearImage) {
+      btnClearImage.addEventListener('click', function () {
+        clearImageFields();
+      });
+    }
+
+    if (fImageFile) {
+      fImageFile.addEventListener('change', function (e) {
+        var file = e.target.files && e.target.files[0];
+        if (!file) return;
+        if (file.size > IMAGE_FILE_MAX) {
+          alert('图片过大，请选择小于约 400KB 的文件或使用外链');
+          fImageFile.value = '';
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function () {
+          var dataUrl = reader.result;
+          if (typeof dataUrl !== 'string' || dataUrl.length > 500000) {
+            alert('图片编码后仍过大，请压缩或使用外链');
+            fImageFile.value = '';
+            return;
+          }
+          if (fImage) fImage.value = dataUrl;
+          if (fImageUrl) fImageUrl.value = '';
+          showImagePreview(dataUrl);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (fImageUrl) {
+      fImageUrl.addEventListener('input', function () {
+        if (fImage && fImage.value) return;
+        var u = (fImageUrl.value || '').trim();
+        if (u.indexOf('http') === 0) showImagePreview(u);
+        else if (!u) showImagePreview('');
+      });
+    }
 
     function fetchCards() {
       return fetch('/api/ptcg/cards', { headers: authHeaders(), credentials: 'same-origin' })
@@ -235,6 +349,7 @@
         var items = old.map(function (c) {
           return {
             name: c.name,
+            version: c.version || c.set || '',
             set: c.set || '',
             quantity: c.quantity != null ? c.quantity : 1,
             condition: c.condition || '',
@@ -261,8 +376,7 @@
       var q = (searchEl.value || '').trim().toLowerCase();
       if (!q) return cardsCache.slice();
       return cardsCache.filter(function (c) {
-        var blob = [c.name, c.set, c.condition, c.notes].join(' ').toLowerCase();
-        return blob.indexOf(q) !== -1;
+        return cardSearchBlob(c).indexOf(q) !== -1;
       });
     }
 
@@ -280,23 +394,59 @@
         var li = document.createElement('li');
         li.className = 'card-item';
         li.dataset.id = c.id;
-        var meta = [];
-        if (c.set) meta.push('系列：' + c.set);
-        meta.push('数量：' + (c.quantity != null ? c.quantity : 1));
-        if (c.condition) meta.push('品相：' + c.condition);
-        li.innerHTML =
-          '<div class="card-item-main">' +
-          '<div class="card-item-title"></div>' +
-          '<div class="card-item-meta"></div>' +
-          (c.notes ? '<div class="card-item-notes"></div>' : '') +
-          '</div>' +
-          '<div class="card-item-actions">' +
+
+        var row = document.createElement('div');
+        row.className = 'card-item-row';
+
+        if (c.image) {
+          var tw = document.createElement('div');
+          tw.className = 'card-item-thumb';
+          var im = document.createElement('img');
+          im.alt = '';
+          im.loading = 'lazy';
+          im.src = c.image;
+          tw.appendChild(im);
+          row.appendChild(tw);
+        }
+
+        var main = document.createElement('div');
+        main.className = 'card-item-main';
+        var title = document.createElement('div');
+        title.className = 'card-item-title';
+        var no = c.cardNo != null ? '#' + c.cardNo + ' ' : '';
+        title.textContent = no + (c.name || '（未命名）');
+        var meta = document.createElement('div');
+        meta.className = 'card-item-meta';
+        var metaParts = [];
+        if (c.year) metaParts.push('年份：' + c.year);
+        if (c.language) metaParts.push('语言：' + c.language);
+        if (c.version) metaParts.push('版本：' + c.version);
+        if (c.rarity) metaParts.push('稀有度：' + c.rarity);
+        if (c.purchasePrice != null && c.purchasePrice !== '') {
+          metaParts.push('购入：¥' + c.purchasePrice);
+        }
+        if (c.cardStatus) metaParts.push('状态：' + c.cardStatus);
+        if (c.graded) metaParts.push('评级：' + (c.gradingCompany || '') + ' ' + (c.gradingNumber || ''));
+        if (c.condition) metaParts.push('品相：' + c.condition);
+        meta.textContent = metaParts.join(' · ');
+        main.appendChild(title);
+        main.appendChild(meta);
+        if (c.notes) {
+          var notes = document.createElement('div');
+          notes.className = 'card-item-notes';
+          notes.textContent = c.notes;
+          main.appendChild(notes);
+        }
+
+        var actions = document.createElement('div');
+        actions.className = 'card-item-actions';
+        actions.innerHTML =
           '<button type="button" class="btn btn-ghost btn-sm" data-act="edit">编辑</button>' +
-          '<button type="button" class="btn btn-danger btn-sm" data-act="del">删除</button>' +
-          '</div>';
-        li.querySelector('.card-item-title').textContent = c.name || '（未命名）';
-        li.querySelector('.card-item-meta').textContent = meta.join(' · ');
-        if (c.notes) li.querySelector('.card-item-notes').textContent = c.notes;
+          '<button type="button" class="btn btn-danger btn-sm" data-act="del">删除</button>';
+
+        row.appendChild(main);
+        row.appendChild(actions);
+        li.appendChild(row);
         listEl.appendChild(li);
       });
     }
@@ -304,11 +454,39 @@
     function openForm(card) {
       formWrap.classList.remove('hidden');
       editId.value = card ? card.id : '';
+      if (cardNoHint) {
+        if (card && card.cardNo != null) {
+          cardNoHint.textContent = '编号：' + card.cardNo + '（自动生成，不可改）';
+        } else {
+          cardNoHint.textContent = '编号将在保存后自动生成';
+        }
+      }
       fName.value = card ? card.name || '' : '';
-      fSet.value = card ? card.set || '' : '';
-      fQty.value = card && card.quantity != null ? card.quantity : 1;
+      fYear.value = card && card.year != null ? card.year : '';
+      fLanguage.value = card ? card.language || '' : '';
+      fVersion.value = card ? (card.version || card.set || '') : '';
+      fRarity.value = card ? card.rarity || '' : '';
+      fPurchasePrice.value =
+        card && card.purchasePrice != null && card.purchasePrice !== ''
+          ? card.purchasePrice
+          : '';
+      fGraded.checked = !!(card && card.graded);
+      fGradingCompany.value = card ? card.gradingCompany || '' : '';
+      fGradingNumber.value = card ? card.gradingNumber || '' : '';
       fCondition.value = card ? card.condition || '' : '';
+      fCardStatus.value = card ? card.cardStatus || '' : '';
       fNotes.value = card ? card.notes || '' : '';
+      clearImageFields();
+      if (card && card.image) {
+        if (card.image.indexOf('data:') === 0) {
+          fImage.value = card.image;
+          showImagePreview(card.image);
+        } else {
+          fImageUrl.value = card.image;
+          showImagePreview(card.image);
+        }
+      }
+      syncGradedUi();
       fName.focus();
     }
 
@@ -316,6 +494,9 @@
       formWrap.classList.add('hidden');
       form.reset();
       editId.value = '';
+      clearImageFields();
+      if (cardNoHint) cardNoHint.textContent = '';
+      syncGradedUi();
     }
 
     document.getElementById('btnAddCard').addEventListener('click', function () {
@@ -326,14 +507,37 @@
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var id = editId.value;
+      var imgVal = (fImage && fImage.value) ? fImage.value.trim() : '';
+      if (!imgVal && fImageUrl) imgVal = fImageUrl.value.trim();
+
       var payload = {
         name: fName.value.trim(),
-        set: fSet.value.trim(),
-        quantity: Math.max(0, parseInt(fQty.value, 10) || 0),
+        year: fYear.value === '' ? '' : fYear.value,
+        language: fLanguage.value.trim(),
+        version: fVersion.value.trim(),
+        rarity: fRarity.value.trim(),
+        purchasePrice: fPurchasePrice.value === '' ? '' : fPurchasePrice.value,
+        graded: fGraded.checked,
+        gradingCompany: fGradingCompany.value.trim(),
+        gradingNumber: fGradingNumber.value.trim(),
         condition: fCondition.value.trim(),
         notes: fNotes.value.trim(),
+        cardStatus: fCardStatus.value,
+        image: imgVal,
+        quantity: 1,
       };
+
       if (!payload.name) return;
+      if (payload.graded) {
+        if (!payload.gradingCompany) {
+          alert('请填写评级公司');
+          return;
+        }
+        if (!payload.gradingNumber) {
+          alert('请填写评级编号');
+          return;
+        }
+      }
 
       var url = '/api/ptcg/cards';
       var method = 'POST';
@@ -377,7 +581,8 @@
       var card = cardsCache.find(function (x) { return x.id === id; });
       if (act === 'edit' && card) openForm(card);
       if (act === 'del' && card) {
-        if (!confirm('确定删除「' + (card.name || '该卡牌') + '」？')) return;
+        var label = card.cardNo != null ? '#' + card.cardNo + ' ' : '';
+        if (!confirm('确定删除「' + label + (card.name || '该卡牌') + '」？')) return;
         fetch('/api/ptcg/cards/' + encodeURIComponent(id), {
           method: 'DELETE',
           headers: authHeaders(),

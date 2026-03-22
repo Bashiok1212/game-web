@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="css/cards.css">
 </head>
 <body>
-  <!-- PTCG 独立账号：MongoDB 存储；可选 .env 备用登录 -->
   <div id="ptcgAuth" class="ptcg-auth-panel">
     <div class="ptcg-auth-box">
       <div class="ptcg-auth-tabs">
@@ -58,13 +57,13 @@
     <header class="cards-header cards-header-row">
       <div>
         <h1>PTCG 个人卡牌管理</h1>
-        <p class="cards-sub">卡牌数据保存在服务器数据库（MongoDB），登录后多端同步；仍建议定期导出 JSON 备份。</p>
+        <p class="cards-sub">卡牌数据保存在服务器数据库（MongoDB），编号自动生成；图片可填外链或本地上传（勿过大）。</p>
       </div>
       <button type="button" id="btnPtcgLogout" class="btn btn-ghost btn-sm">退出登录</button>
     </header>
 
     <section class="cards-toolbar">
-      <input type="search" id="cardSearch" class="cards-search" placeholder="搜索名称 / 系列 / 备注…" autocomplete="off">
+      <input type="search" id="cardSearch" class="cards-search" placeholder="搜索编号、名称、年份、语言、版本、稀有度、状态…" autocomplete="off">
       <div class="cards-actions">
         <button type="button" id="btnAddCard" class="btn btn-primary">添加卡牌</button>
         <button type="button" id="btnExport" class="btn btn-secondary">导出 JSON</button>
@@ -78,28 +77,88 @@
     <div id="cardFormWrap" class="card-form-wrap hidden">
       <form id="cardForm" class="card-form">
         <input type="hidden" id="editId" value="">
+        <p class="card-form-no" id="cardNoHint" aria-live="polite"></p>
+
         <div class="form-row">
           <label>名称 <span class="req">*</span></label>
           <input type="text" id="fName" required maxlength="128" placeholder="卡牌名称">
         </div>
-        <div class="form-row">
-          <label>系列 / 弹</label>
-          <input type="text" id="fSet" maxlength="128" placeholder="如：SV9 / 朱紫">
+
+        <div class="form-row form-row-3">
+          <div>
+            <label>年份</label>
+            <input type="number" id="fYear" min="0" max="9999" step="1" placeholder="如 2024">
+          </div>
+          <div>
+            <label>语言</label>
+            <input type="text" id="fLanguage" maxlength="32" placeholder="简中 / 日文 / 英文…">
+          </div>
+          <div>
+            <label>版本</label>
+            <input type="text" id="fVersion" maxlength="128" placeholder="补充包 / 礼盒 / 版本名">
+          </div>
         </div>
+
         <div class="form-row form-row-half">
           <div>
-            <label>数量</label>
-            <input type="number" id="fQty" min="0" value="1" step="1">
+            <label>稀有度</label>
+            <input type="text" id="fRarity" maxlength="64" placeholder="如：AR / SAR / 闪">
           </div>
           <div>
-            <label>品相</label>
-            <input type="text" id="fCondition" maxlength="64" placeholder="如：NM / 略损">
+            <label>购入价（元）</label>
+            <input type="number" id="fPurchasePrice" min="0" step="0.01" placeholder="0">
           </div>
         </div>
+
+        <div class="form-row form-row-graded">
+          <label class="label-inline">
+            <input type="checkbox" id="fGraded"> 评级卡
+          </label>
+        </div>
+        <div id="gradedFields" class="form-row form-row-half graded-fields hidden">
+          <div>
+            <label>评级公司 <span class="req graded-req">*</span></label>
+            <input type="text" id="fGradingCompany" maxlength="64" placeholder="PSA / BGS / CGC…">
+          </div>
+          <div>
+            <label>评级编号 <span class="req graded-req">*</span></label>
+            <input type="text" id="fGradingNumber" maxlength="64" placeholder="证书编号">
+          </div>
+        </div>
+
+        <div class="form-row form-row-half">
+          <div>
+            <label>品相</label>
+            <input type="text" id="fCondition" maxlength="64" placeholder="如：NM / 白边">
+          </div>
+          <div>
+            <label>卡状态</label>
+            <select id="fCardStatus">
+              <option value="">（未选）</option>
+              <option value="在库">在库</option>
+              <option value="已售">已售</option>
+              <option value="出借">出借</option>
+              <option value="送评中">送评中</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+        </div>
+
         <div class="form-row">
           <label>备注</label>
-          <textarea id="fNotes" rows="3" maxlength="2000" placeholder="收购价、存放位置等"></textarea>
+          <textarea id="fNotes" rows="3" maxlength="2000" placeholder="其他说明"></textarea>
         </div>
+
+        <div class="form-row">
+          <label>图片</label>
+          <input type="url" id="fImageUrl" maxlength="2000" placeholder="https:// 外链（推荐）或留空">
+          <p class="form-hint">或上传本地图片（建议 &lt; 400KB，将转为 Base64 存库）</p>
+          <input type="file" id="fImageFile" accept="image/*" class="input-file-inline">
+          <input type="hidden" id="fImage" value="">
+          <div id="fImagePreview" class="image-preview hidden"></div>
+          <button type="button" id="btnClearImage" class="btn btn-ghost btn-sm btn-clear-img hidden">清除图片</button>
+        </div>
+
         <div class="form-btns">
           <button type="submit" class="btn btn-primary">保存</button>
           <button type="button" id="btnCancelForm" class="btn btn-ghost">取消</button>

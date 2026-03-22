@@ -64,8 +64,8 @@ app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 
-// 请求体大小限制（PTCG 批量导入可能较大）
-app.use(express.json({ limit: '512kb' }));
+// 请求体大小限制（PTCG 含 Base64 图片时需更大）
+app.use(express.json({ limit: '3mb' }));
 
 // CORS：生产环境必须配置具体域名
 const corsOrigin = process.env.CORS_ORIGIN || '*';

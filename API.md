@@ -135,12 +135,32 @@
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/ptcg/cards` | 当前管理员的卡牌列表 |
-| POST | `/api/ptcg/cards` | 新增单条（body：`name`, `set`, `quantity`, `condition`, `notes`） |
-| PUT | `/api/ptcg/cards/:id` | 更新 |
+| POST | `/api/ptcg/cards` | 新增单条（见下方字段说明） |
+| PUT | `/api/ptcg/cards/:id` | 更新（同字段；**不可改** `cardNo`） |
 | DELETE | `/api/ptcg/cards/:id` | 删除 |
-| POST | `/api/ptcg/cards/import` | 批量导入（body：`{ "cards": [ ... ] }`，与导出 JSON 结构兼容） |
+| POST | `/api/ptcg/cards/import` | 批量导入（body：`{ "items": [ ... ] }` 或直接数组，与导出 JSON 兼容） |
 
-列表项字段示例：`id`, `name`, `set`, `quantity`, `condition`, `notes`, `createdAt`, `updatedAt`。
+**卡牌字段**（`name` 必填；`cardNo` 为保存后自动生成序号，仅列表展示）：
+
+| 字段 | 说明 |
+|------|------|
+| `cardNo` | 编号（整数，按管理员自增，只读） |
+| `name` | 名称 |
+| `year` | 年份（0～9999，可选） |
+| `language` | 语言 |
+| `version` | 版本（旧版 `set` 可与 `version` 互填，导入时无 `version` 时可用 `set`） |
+| `rarity` | 稀有度 |
+| `purchasePrice` | 购入价（数字，元） |
+| `graded` | 是否评级卡（布尔） |
+| `gradingCompany` | 评级公司（`graded=true` 时必填） |
+| `gradingNumber` | 评级编号（`graded=true` 时必填） |
+| `condition` | 品相 |
+| `notes` | 备注 |
+| `cardStatus` | 卡状态（如：在库 / 已售） |
+| `image` | 图片（外链 URL 或 `data:image/...` Base64，勿过大） |
+| `set` / `quantity` | 兼容旧数据 |
+
+**成功**：`GET` 返回 `{ "cards": [ ... ] }`，单条对象含 `createdAt` / `updatedAt`。
 
 ---
 

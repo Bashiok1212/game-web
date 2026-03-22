@@ -253,6 +253,7 @@
     var btnClearImage = document.getElementById('btnClearImage');
 
     var dropdownConfig = {};
+    var tableWrap = document.getElementById('cardsTableWrap');
 
     if (!listEl || !form) return;
 
@@ -657,74 +658,88 @@
       });
     }
 
+    function tdText(val, className) {
+      var td = document.createElement('td');
+      if (className) td.className = className;
+      var s = val != null && val !== '' ? String(val) : '';
+      td.textContent = s || '—';
+      return td;
+    }
+
+    function tdNotes(text) {
+      var td = document.createElement('td');
+      td.className = 'cards-td-notes';
+      var t = (text || '').trim();
+      if (t) {
+        td.textContent = t.length > 48 ? t.slice(0, 48) + '…' : t;
+        td.title = t;
+      } else {
+        td.textContent = '—';
+      }
+      return td;
+    }
+
     function render() {
       var cards = getFiltered();
       listEl.innerHTML = '';
       if (cards.length === 0) {
         emptyEl.classList.toggle('hidden', false);
+        if (tableWrap) tableWrap.classList.add('hidden');
         if (cardsCache.length > 0) emptyEl.textContent = '没有匹配的卡牌，换个关键词试试。';
         else emptyEl.textContent = '暂无卡牌，点击「添加卡牌」开始。';
         return;
       }
       emptyEl.classList.add('hidden');
+      if (tableWrap) tableWrap.classList.remove('hidden');
+
       cards.forEach(function (c) {
-        var li = document.createElement('li');
-        li.className = 'card-item';
-        li.dataset.id = c.id;
+        var tr = document.createElement('tr');
+        tr.className = 'cards-table-row';
+        tr.dataset.id = c.id;
 
-        var row = document.createElement('div');
-        row.className = 'card-item-row';
-
+        var tdImg = document.createElement('td');
+        tdImg.className = 'cards-td-thumb';
         if (c.image) {
-          var tw = document.createElement('div');
-          tw.className = 'card-item-thumb';
           var im = document.createElement('img');
           im.alt = '';
           im.loading = 'lazy';
           im.src = c.image;
-          tw.appendChild(im);
-          row.appendChild(tw);
+          tdImg.appendChild(im);
+        } else {
+          tdImg.textContent = '—';
         }
+        tr.appendChild(tdImg);
 
-        var main = document.createElement('div');
-        main.className = 'card-item-main';
-        var title = document.createElement('div');
-        title.className = 'card-item-title';
-        var no = c.cardNo != null ? '#' + c.cardNo + ' ' : '';
-        title.textContent = no + (c.name || '（未命名）');
-        var meta = document.createElement('div');
-        meta.className = 'card-item-meta';
-        var metaParts = [];
-        if (c.year) metaParts.push('年份：' + c.year);
-        if (c.language) metaParts.push('语言：' + c.language);
-        if (c.version) metaParts.push('版本：' + c.version);
-        if (c.rarity) metaParts.push('稀有度：' + c.rarity);
+        tr.appendChild(tdText(c.cardNo != null ? c.cardNo : '', 'cards-td-num'));
+        tr.appendChild(tdText(c.name || '（未命名）', 'cards-td-name'));
+        tr.appendChild(tdText(c.year != null && c.year !== '' ? c.year : '', ''));
+        tr.appendChild(tdText(c.language, ''));
+        tr.appendChild(tdText(c.version || c.set || '', ''));
+        tr.appendChild(tdText(c.rarity, ''));
+        var priceStr = '';
         if (c.purchasePrice != null && c.purchasePrice !== '') {
-          metaParts.push('购入：¥' + c.purchasePrice);
+          priceStr = '¥' + c.purchasePrice;
         }
-        if (c.cardStatus) metaParts.push('状态：' + c.cardStatus);
-        if (c.graded) metaParts.push('评级：' + (c.gradingCompany || '') + ' ' + (c.gradingNumber || ''));
-        if (c.condition) metaParts.push('品相：' + c.condition);
-        meta.textContent = metaParts.join(' · ');
-        main.appendChild(title);
-        main.appendChild(meta);
-        if (c.notes) {
-          var notes = document.createElement('div');
-          notes.className = 'card-item-notes';
-          notes.textContent = c.notes;
-          main.appendChild(notes);
-        }
+        tr.appendChild(tdText(priceStr, 'cards-td-num'));
 
-        var actions = document.createElement('div');
-        actions.className = 'card-item-actions';
-        actions.innerHTML =
-          '<button type="button" class="btn btn-ghost btn-sm" data-act="edit">编辑</button>' +
+        var gradeStr = '';
+        if (c.graded) {
+          gradeStr = ((c.gradingCompany || '') + ' ' + (c.gradingNumber || '')).trim() || '是';
+        }
+        tr.appendChild(tdText(gradeStr, 'cards-td-grading'));
+
+        tr.appendChild(tdText(c.condition, ''));
+        tr.appendChild(tdText(c.cardStatus, ''));
+        tr.appendChild(tdNotes(c.notes));
+
+        var tdAct = document.createElement('td');
+        tdAct.className = 'cards-td-actions';
+        tdAct.innerHTML =
+          '<button type="button" class="btn btn-ghost btn-sm" data-act="edit">编辑</button> ' +
           '<button type="button" class="btn btn-danger btn-sm" data-act="del">删除</button>';
+        tr.appendChild(tdAct);
 
-        row.appendChild(main);
-        row.appendChild(actions);
-        li.appendChild(row);
-        listEl.appendChild(li);
+        listEl.appendChild(tr);
       });
     }
 
@@ -826,7 +841,9 @@
     listEl.addEventListener('click', function (e) {
       var btn = e.target.closest('button');
       if (!btn) return;
-      var id = btn.closest('.card-item').dataset.id;
+      var row = btn.closest('tr');
+      if (!row || !row.dataset.id) return;
+      var id = row.dataset.id;
       var act = btn.getAttribute('data-act');
       var card = cardsCache.find(function (x) { return x.id === id; });
       if (act === 'edit' && card) openForm(card);

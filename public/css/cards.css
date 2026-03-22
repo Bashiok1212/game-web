@@ -504,73 +504,145 @@ body {
 
 .cards-empty.hidden { display: none; }
 
-.cards-list {
-  list-style: none;
-}
-
-.card-item {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 0.85rem 1rem;
-  margin-bottom: 0.65rem;
-}
-
-.card-item-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.card-item-thumb {
-  flex-shrink: 0;
-  width: 56px;
-  height: 56px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--bg);
-}
-
-.card-item-thumb img {
+.cards-table-wrap {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.05);
 }
 
-.card-item-main { flex: 1; min-width: 0; }
+.cards-table-wrap.hidden {
+  display: none !important;
+}
 
-.card-item-title {
+.cards-table {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.cards-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 0.55rem 0.45rem;
+  text-align: left;
   font-weight: 600;
-  font-size: 1rem;
-  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+  box-shadow: 0 1px 0 var(--border);
+}
+
+.cards-th-thumb {
+  width: 44px;
+  text-align: center;
+}
+
+.cards-th-num {
+  text-align: right;
+}
+
+.cards-th-actions {
+  width: 120px;
+  text-align: right;
+}
+
+.cards-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s ease;
+}
+
+.cards-table tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
+}
+
+.cards-table tbody tr:hover {
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+}
+
+.cards-table td {
+  padding: 0.45rem 0.45rem;
+  vertical-align: middle;
+  color: var(--text);
+  max-width: 14rem;
+}
+
+.cards-td-thumb {
+  width: 44px;
+  text-align: center;
+  padding: 0.35rem;
+}
+
+.cards-td-thumb img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  margin: 0 auto;
+}
+
+.cards-td-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cards-td-name {
+  font-weight: 600;
+  max-width: 220px;
   word-break: break-word;
 }
 
-.card-item-meta {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-
-.card-item-notes {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-top: 0.4rem;
-  white-space: pre-wrap;
+.cards-td-grading {
+  max-width: 140px;
   word-break: break-word;
 }
 
-.card-item-actions {
-  display: flex;
-  flex-shrink: 0;
-  gap: 0.35rem;
+.cards-td-notes {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
-.card-item-actions button {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8rem;
+.cards-td-actions {
+  white-space: nowrap;
+  text-align: right;
+  max-width: none;
+}
+
+.cards-td-actions .btn {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.75rem;
+}
+
+.cards-list-section {
+  margin-top: 0.75rem;
+  padding-bottom: 1rem;
+  border-bottom: none;
+}
+
+@supports not (background: color-mix(in srgb, red, blue)) {
+  .cards-table tbody tr:nth-child(even) {
+    background: var(--bg);
+  }
+  .cards-table tbody tr:hover {
+    background: var(--surface);
+  }
 }
 
 /* —— 视觉优化：页头、工具栏、表单分区 —— */
@@ -640,19 +712,6 @@ body {
 
 .form-row-lang-ver .form-cell label {
   font-weight: 500;
-}
-
-.card-item {
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
-}
-
-.card-item:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
-}
-
-.cards-list-section {
-  margin-top: 0.5rem;
 }
 
 /* 编辑字段页 */

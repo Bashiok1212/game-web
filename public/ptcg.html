@@ -185,7 +185,28 @@
 
     <section class="cards-list-section">
       <p id="cardsEmpty" class="cards-empty">暂无卡牌，点击「添加卡牌」开始。</p>
-      <ul id="cardsList" class="cards-list"></ul>
+      <div id="cardsTableWrap" class="cards-table-wrap hidden">
+        <table class="cards-table" aria-label="卡牌列表">
+          <thead>
+            <tr>
+              <th class="cards-th-thumb" scope="col">图</th>
+              <th scope="col">编号</th>
+              <th scope="col">名称</th>
+              <th scope="col">年份</th>
+              <th scope="col">语言</th>
+              <th scope="col">版本</th>
+              <th scope="col">稀有度</th>
+              <th scope="col" class="cards-th-num">购入</th>
+              <th scope="col">评级</th>
+              <th scope="col">品相</th>
+              <th scope="col">状态</th>
+              <th scope="col">备注</th>
+              <th class="cards-th-actions" scope="col">操作</th>
+            </tr>
+          </thead>
+          <tbody id="cardsList"></tbody>
+        </table>
+      </div>
     </section>
   </div>
   <script src="js/cards-app.js"></script>

@@ -32,6 +32,16 @@ const isProd = process.env.NODE_ENV === 'production';
 // 反向代理信任（阿里云 SLB 等）
 app.set('trust proxy', 1);
 
+// 拒绝畸形 URL（如扫描器请求的 /%c0），避免 express.static / 路由在 decode 时抛 URIError
+app.use((req, res, next) => {
+  try {
+    decodeURIComponent(req.url.split('?')[0]);
+  } catch (e) {
+    return res.status(400).type('text').send('Bad Request');
+  }
+  next();
+});
+
 // 安全头（生产环境启用完整 CSP）
 app.use(helmet({
   contentSecurityPolicy: isProd ? {
@@ -142,6 +152,9 @@ app.get('*', (req, res) => {
 
 // 统一错误处理，避免泄露堆栈
 app.use((err, req, res, next) => {
+  if (err instanceof URIError || err.statusCode === 400) {
+    return res.status(400).type('text').send('Bad Request');
+  }
   console.error(err);
   res.status(500).json({ error: '服务器内部错误' });
 });

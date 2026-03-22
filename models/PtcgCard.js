@@ -31,8 +31,6 @@ const ptcgCardSchema = new mongoose.Schema(
     /** 兼容旧字段 */
     set: { type: String, trim: true, maxlength: 128, default: '' },
     quantity: { type: Number, default: 1, min: 0 },
-    /** 自定义字段值（键为 PtcgFieldDef.key） */
-    extras: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }
 );

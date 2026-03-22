@@ -57,7 +57,7 @@
     <header class="cards-header cards-header-row">
       <div>
         <h1>PTCG 个人卡牌管理</h1>
-        <p class="cards-sub">核心字段固定；扩展字段请在「编辑字段」页配置，保存后此处表单会自动出现对应输入框。</p>
+        <p class="cards-sub">核心字段固定；在「编辑字段」页为语言、版本、稀有度、品相、卡状态配置下拉选项（每行一项），保存后此处会显示为下拉或手输。</p>
       </div>
       <button type="button" id="btnPtcgLogout" class="btn btn-ghost btn-sm">退出登录</button>
     </header>
@@ -93,18 +93,18 @@
           </div>
           <div class="form-cell">
             <label>语言</label>
-            <input type="text" id="fLanguage" maxlength="32" placeholder="简中 / 日文 / 英文…">
+            <div class="field-control" data-slot="language"></div>
           </div>
           <div class="form-cell">
             <label>版本</label>
-            <input type="text" id="fVersion" maxlength="128" placeholder="补充包 / 礼盒 / 版本名">
+            <div class="field-control" data-slot="version"></div>
           </div>
         </div>
 
         <div class="form-row form-row-half">
           <div class="form-cell">
             <label>稀有度</label>
-            <input type="text" id="fRarity" maxlength="64" placeholder="如：AR / SAR / 闪">
+            <div class="field-control" data-slot="rarity"></div>
           </div>
           <div class="form-cell">
             <label>购入价（元）</label>
@@ -133,18 +133,11 @@
         <div class="form-row form-row-half">
           <div class="form-cell">
             <label>品相</label>
-            <input type="text" id="fCondition" maxlength="64" placeholder="如：NM / 白边">
+            <div class="field-control" data-slot="condition"></div>
           </div>
           <div class="form-cell">
             <label>卡状态</label>
-            <select id="fCardStatus">
-              <option value="">（未选）</option>
-              <option value="在库">在库</option>
-              <option value="已售">已售</option>
-              <option value="出借">出借</option>
-              <option value="送评中">送评中</option>
-              <option value="其他">其他</option>
-            </select>
+            <div class="field-control" data-slot="cardStatus"></div>
           </div>
         </div>
 
@@ -162,12 +155,6 @@
           <div id="fImagePreview" class="image-preview hidden"></div>
           <button type="button" id="btnClearImage" class="btn btn-ghost btn-sm btn-clear-img hidden">清除图片</button>
         </div>
-
-        <div class="form-row form-row-extras-head">
-          <label>自定义字段</label>
-          <p class="form-hint">由 <a href="ptcg-fields.html">编辑字段</a> 页配置；无配置时此处为空。</p>
-        </div>
-        <div id="extrasFields" class="extras-fields-wrap"></div>
 
         <div class="form-btns">
           <button type="submit" class="btn btn-primary" id="btnSubmitCard">保存</button>

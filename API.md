@@ -158,21 +158,19 @@
 | `notes` | 备注 |
 | `cardStatus` | 卡状态（如：在库 / 已售） |
 | `image` | 图片（外链 URL 或 `data:image/...` Base64，勿过大） |
-| `extras` | 自定义字段键值对象，键与「字段定义」中的 `key` 对应 |
 | `set` / `quantity` | 兼容旧数据 |
 
-#### 自定义字段定义（均需 Bearer + `adminId`）
+#### 现有字段下拉配置（均需 Bearer + `adminId`）
 
-独立页：`/ptcg-fields.html`。标识 `key` 创建后不可改（小写字母开头，仅 `a-z0-9_`）。
+独立页：`/ptcg-fields.html`。为固定五个键配置选项（每行一项）：`language`、`version`、`rarity`、`condition`、`cardStatus`。某键**未保存过**时，合并接口对该键返回空数组（卡状态除外，见下）；**保存为空数组**表示该字段在录入页用手输框而非下拉。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | `/api/ptcg/field-defs` | 当前管理员的字段定义列表 |
-| POST | `/api/ptcg/field-defs` | 新建：`key`, `label`, `type`(text/textarea/number/select), `order`, `required`, `options`(select 时必填) |
-| PUT | `/api/ptcg/field-defs/:id` | 更新（**不可改** `key`） |
-| DELETE | `/api/ptcg/field-defs/:id` | 删除定义（卡牌上已存的 `extras` 键值仍保留在库中） |
+| GET | `/api/ptcg/field-dropdowns` | 合并默认值后的下拉（卡牌录入页用）。`cardStatus` 未在库中配置键时使用服务端默认列表；库中 `cardStatus: []` 时该字段为手输 |
+| GET | `/api/ptcg/field-dropdowns?raw=1` | 仅已保存的键与数组（编辑页用） |
+| PUT | `/api/ptcg/field-dropdowns` | body：`{ "dropdowns": { "language": ["简中","日文"], ... } }` |
 
-**成功**：`GET /field-defs` 返回 `{ "fieldDefs": [ ... ] }`；`GET /cards` 返回 `{ "cards": [ ... ] }`，单条含 `extras`、`createdAt` / `updatedAt`。
+**成功**：`GET /field-dropdowns` 返回 `{ "dropdowns": { ... }, "fieldKeys": [ ... ] }`；`GET /cards` 返回 `{ "cards": [ ... ] }`，单条含 `createdAt` / `updatedAt`。
 
 ---
 

@@ -3,6 +3,8 @@
 
   var TOKEN_KEY = 'ptcg_token';
 
+  var DEFAULT_CARD_STATUS_LINES = ['在库', '已售', '出借', '送评中', '其他'];
+
   var authPanel = document.getElementById('ptcgAuth');
   var appPanel = document.getElementById('fieldsApp');
   var loginForm = document.getElementById('ptcgLoginForm');
@@ -13,8 +15,6 @@
   var registerPanel = document.getElementById('ptcgRegisterPanel');
   var registerForm = document.getElementById('ptcgRegisterForm');
   var registerErr = document.getElementById('ptcgRegisterErr');
-
-  var listCache = [];
 
   function getToken() {
     try {
@@ -82,20 +82,45 @@
     });
   }
 
-  function typeLabel(t) {
-    var m = { text: '单行', textarea: '多行', number: '数字', select: '下拉' };
-    return m[t] || t;
+  function linesToArr(text) {
+    if (!text || !String(text).trim()) return [];
+    return String(text)
+      .split(/\r?\n/)
+      .map(function (s) {
+        return s.trim();
+      })
+      .filter(Boolean);
   }
 
-  function syncOptionsRow() {
-    var sel = document.getElementById('fdType');
-    var row = document.getElementById('fdOptionsRow');
-    if (!sel || !row) return;
-    row.classList.toggle('hidden', sel.value !== 'select');
+  function arrToLines(arr) {
+    if (!arr || !arr.length) return '';
+    return arr.join('\n');
   }
 
-  function fetchList() {
-    return fetch('/api/ptcg/field-defs', { headers: authHeaders(), credentials: 'same-origin' })
+  function loadRawIntoForm(raw) {
+    raw = raw || {};
+    var taCardStatus = document.getElementById('taCardStatus');
+    var taLanguage = document.getElementById('taLanguage');
+    var taVersion = document.getElementById('taVersion');
+    var taRarity = document.getElementById('taRarity');
+    var taCondition = document.getElementById('taCondition');
+
+    if (Object.prototype.hasOwnProperty.call(raw, 'cardStatus')) {
+      taCardStatus.value = arrToLines(raw.cardStatus);
+    } else {
+      taCardStatus.value = arrToLines(DEFAULT_CARD_STATUS_LINES.slice());
+    }
+    taLanguage.value = arrToLines(raw.language);
+    taVersion.value = arrToLines(raw.version);
+    taRarity.value = arrToLines(raw.rarity);
+    taCondition.value = arrToLines(raw.condition);
+  }
+
+  function fetchRaw() {
+    return fetch('/api/ptcg/field-dropdowns?raw=1', {
+      headers: authHeaders(),
+      credentials: 'same-origin',
+    })
       .then(function (r) {
         if (r.status === 401) {
           setToken('');
@@ -106,158 +131,29 @@
         return r.json();
       })
       .then(function (data) {
-        listCache = data.fieldDefs || [];
+        loadRawIntoForm(data.dropdowns || {});
       });
   }
 
-  function renderTable() {
-    var tbody = document.getElementById('fdTableBody');
-    var empty = document.getElementById('fdEmpty');
-    var table = document.getElementById('fdTable');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    if (listCache.length === 0) {
-      if (empty) empty.classList.remove('hidden');
-      if (table) table.classList.add('hidden');
-      return;
-    }
-    if (empty) empty.classList.add('hidden');
-    if (table) table.classList.remove('hidden');
-    listCache.forEach(function (d) {
-      var tr = document.createElement('tr');
-      var td0 = document.createElement('td');
-      td0.textContent = d.label;
-      var td1 = document.createElement('td');
-      td1.textContent = d.key;
-      var td2 = document.createElement('td');
-      td2.textContent = typeLabel(d.type);
-      var td3 = document.createElement('td');
-      td3.textContent = String(d.order != null ? d.order : 0);
-      var td4 = document.createElement('td');
-      td4.textContent = d.required ? '是' : '';
-      var td5 = document.createElement('td');
-      var b1 = document.createElement('button');
-      b1.type = 'button';
-      b1.className = 'btn btn-ghost btn-sm';
-      b1.textContent = '编辑';
-      b1.dataset.id = d.id;
-      b1.dataset.act = 'edit';
-      var b2 = document.createElement('button');
-      b2.type = 'button';
-      b2.className = 'btn btn-danger btn-sm';
-      b2.textContent = '删除';
-      b2.dataset.id = d.id;
-      b2.dataset.act = 'del';
-      td5.appendChild(b1);
-      td5.appendChild(document.createTextNode(' '));
-      td5.appendChild(b2);
-      tr.appendChild(td0);
-      tr.appendChild(td1);
-      tr.appendChild(td2);
-      tr.appendChild(td3);
-      tr.appendChild(td4);
-      tr.appendChild(td5);
-      tbody.appendChild(tr);
-    });
-  }
-
-  function openForm(def) {
-    var wrap = document.getElementById('fieldDefFormWrap');
-    var keyRow = document.getElementById('fdKeyRow');
-    var fdKey = document.getElementById('fdKey');
-    document.getElementById('fdEditId').value = def ? def.id : '';
-    document.getElementById('fdLabel').value = def ? def.label : '';
-    if (fdKey) {
-      fdKey.value = def ? def.key : '';
-      fdKey.disabled = !!def;
-      fdKey.required = !def;
-    }
-    if (keyRow) keyRow.classList.toggle('fd-key-readonly', !!def);
-    document.getElementById('fdType').value = def ? def.type : 'text';
-    document.getElementById('fdOrder').value = def && def.order != null ? def.order : 0;
-    document.getElementById('fdRequired').checked = !!(def && def.required);
-    var opts = def && def.options ? def.options.join('\n') : '';
-    document.getElementById('fdOptions').value = opts;
-    syncOptionsRow();
-    if (wrap) wrap.classList.remove('hidden');
-    document.getElementById('fdLabel').focus();
-  }
-
-  function closeForm() {
-    var wrap = document.getElementById('fieldDefFormWrap');
-    if (wrap) wrap.classList.add('hidden');
-    document.getElementById('fieldDefForm').reset();
-    var fdKey = document.getElementById('fdKey');
-    if (fdKey) fdKey.disabled = false;
-  }
-
   function initFieldsApp() {
-    document.getElementById('btnAddFieldDef').addEventListener('click', function () {
-      openForm(null);
-    });
-    document.getElementById('btnFdCancel').addEventListener('click', closeForm);
-    document.getElementById('fdType').addEventListener('change', syncOptionsRow);
+    fetchRaw().catch(function () {});
 
-    document.getElementById('fdTableBody').addEventListener('click', function (e) {
-      var btn = e.target.closest('button');
-      if (!btn) return;
-      var id = btn.dataset.id;
-      var act = btn.dataset.act;
-      var def = listCache.find(function (x) { return x.id === id; });
-      if (act === 'edit' && def) openForm(def);
-      if (act === 'del' && def) {
-        if (!confirm('确定删除字段「' + def.label + '」？卡牌上已填的值仍会保留在数据中，但不再显示。')) return;
-        fetch('/api/ptcg/field-defs/' + encodeURIComponent(id), {
-          method: 'DELETE',
-          headers: authHeaders(),
-          credentials: 'same-origin',
-        })
-          .then(function (r) {
-            if (r.status === 401) {
-              setToken('');
-              showAuth();
-              return;
-            }
-            if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || '删除失败'); });
-            return fetchList();
-          })
-          .then(function () {
-            renderTable();
-          })
-          .catch(function (err) {
-            alert(err.message || '删除失败');
-          });
-      }
-    });
-
-    document.getElementById('fieldDefForm').addEventListener('submit', function (e) {
+    document.getElementById('dropdownForm').addEventListener('submit', function (e) {
       e.preventDefault();
-      var editId = document.getElementById('fdEditId').value;
-      var label = document.getElementById('fdLabel').value.trim();
-      var type = document.getElementById('fdType').value;
-      var order = parseInt(document.getElementById('fdOrder').value, 10) || 0;
-      var required = document.getElementById('fdRequired').checked;
-      var optionsText = document.getElementById('fdOptions').value;
-      var body = { label: label, type: type, order: order, required: required };
-      if (type === 'select') body.options = optionsText;
-      var url = '/api/ptcg/field-defs';
-      var method = 'POST';
-      if (editId) {
-        url = '/api/ptcg/field-defs/' + encodeURIComponent(editId);
-        method = 'PUT';
-      } else {
-        var key = document.getElementById('fdKey').value.trim().toLowerCase();
-        if (!/^[a-z][a-z0-9_]{0,31}$/.test(key)) {
-          alert('标识须为小写字母开头，仅含小写字母、数字、下划线');
-          return;
-        }
-        body.key = key;
-      }
-      fetch(url, {
-        method: method,
+      var msg = document.getElementById('fdSaveMsg');
+      if (msg) msg.textContent = '';
+      var dropdowns = {
+        cardStatus: linesToArr(document.getElementById('taCardStatus').value),
+        language: linesToArr(document.getElementById('taLanguage').value),
+        version: linesToArr(document.getElementById('taVersion').value),
+        rarity: linesToArr(document.getElementById('taRarity').value),
+        condition: linesToArr(document.getElementById('taCondition').value),
+      };
+      fetch('/api/ptcg/field-dropdowns', {
+        method: 'PUT',
         headers: authHeaders(),
         credentials: 'same-origin',
-        body: JSON.stringify(body),
+        body: JSON.stringify({ dropdowns: dropdowns }),
       })
         .then(function (r) {
           if (r.status === 401) {
@@ -269,14 +165,19 @@
           return r.json();
         })
         .then(function () {
-          return fetchList();
-        })
-        .then(function () {
-          closeForm();
-          renderTable();
+          if (msg) {
+            msg.style.color = 'var(--success)';
+            msg.textContent = '已保存。返回卡牌页即可看到下拉效果。';
+          }
+          return fetchRaw();
         })
         .catch(function (err) {
-          if (err.message !== 'unauthorized') alert(err.message || '保存失败');
+          if (err.message !== 'unauthorized') {
+            if (msg) {
+              msg.style.color = 'var(--error)';
+              msg.textContent = err.message || '保存失败';
+            }
+          }
         });
     });
 
@@ -284,14 +185,6 @@
       setToken('');
       showAuth();
     });
-
-    syncOptionsRow();
-
-    fetchList()
-      .then(function () {
-        renderTable();
-      })
-      .catch(function () {});
   }
 
   if (loginForm) {

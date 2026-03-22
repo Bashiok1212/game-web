@@ -5,6 +5,15 @@
   var LEGACY_STORAGE = 'personalCards_v1';
   var IMAGE_FILE_MAX = 450000;
 
+  var DROPDOWN_KEYS = ['language', 'version', 'rarity', 'condition', 'cardStatus'];
+  var FIELD_IDS = {
+    language: 'fLanguage',
+    version: 'fVersion',
+    rarity: 'fRarity',
+    condition: 'fCondition',
+    cardStatus: 'fCardStatus',
+  };
+
   var authPanel = document.getElementById('ptcgAuth');
   var appPanel = document.getElementById('ptcgApp');
   var loginForm = document.getElementById('ptcgLoginForm');
@@ -196,17 +205,6 @@
     });
   }
 
-  function extrasBlob(c) {
-    if (!c.extras || typeof c.extras !== 'object') return '';
-    var s = '';
-    for (var k in c.extras) {
-      if (Object.prototype.hasOwnProperty.call(c.extras, k)) {
-        s += ' ' + c.extras[k];
-      }
-    }
-    return s;
-  }
-
   function cardSearchBlob(c) {
     var parts = [
       c.cardNo,
@@ -224,7 +222,6 @@
       c.cardStatus,
       c.set,
       c.quantity,
-      extrasBlob(c),
     ];
     return parts
       .filter(function (x) {
@@ -244,16 +241,11 @@
     var cardNoHint = document.getElementById('cardNoHint');
     var fName = document.getElementById('fName');
     var fYear = document.getElementById('fYear');
-    var fLanguage = document.getElementById('fLanguage');
-    var fVersion = document.getElementById('fVersion');
-    var fRarity = document.getElementById('fRarity');
     var fPurchasePrice = document.getElementById('fPurchasePrice');
     var fGraded = document.getElementById('fGraded');
     var gradedFields = document.getElementById('gradedFields');
     var fGradingCompany = document.getElementById('fGradingCompany');
     var fGradingNumber = document.getElementById('fGradingNumber');
-    var fCondition = document.getElementById('fCondition');
-    var fCardStatus = document.getElementById('fCardStatus');
     var fNotes = document.getElementById('fNotes');
     var fImageUrl = document.getElementById('fImageUrl');
     var fImageFile = document.getElementById('fImageFile');
@@ -261,7 +253,7 @@
     var fImagePreview = document.getElementById('fImagePreview');
     var btnClearImage = document.getElementById('btnClearImage');
 
-    var fieldDefsCache = [];
+    var dropdownConfig = {};
 
     if (!listEl || !form) return;
 
@@ -274,96 +266,71 @@
       fGraded.addEventListener('change', syncGradedUi);
     }
 
-    function fetchFieldDefs() {
-      return fetch('/api/ptcg/field-defs', { headers: authHeaders(), credentials: 'same-origin' })
+    function fetchFieldDropdowns() {
+      return fetch('/api/ptcg/field-dropdowns', {
+        headers: authHeaders(),
+        credentials: 'same-origin',
+      })
         .then(function (r) {
           if (r.status === 401) {
             setToken('');
             showAuth();
             throw new Error('unauthorized');
           }
-          if (!r.ok) throw new Error('fielddefs');
+          if (!r.ok) throw new Error('load');
           return r.json();
         })
         .then(function (data) {
-          fieldDefsCache = data.fieldDefs || [];
+          dropdownConfig = data.dropdowns || {};
         });
     }
 
-    function extrasContainer() {
-      return document.getElementById('extrasFields');
+    function fieldVal(id) {
+      var el = document.getElementById(id);
+      if (!el) return '';
+      return el.value != null ? String(el.value).trim() : '';
     }
 
-    function renderExtrasForm(card) {
-      var wrap = extrasContainer();
-      if (!wrap) return;
-      wrap.innerHTML = '';
-      var ex = card && card.extras && typeof card.extras === 'object' ? card.extras : {};
-      fieldDefsCache.forEach(function (def) {
-        var val = ex[def.key] != null ? ex[def.key] : '';
-        var row = document.createElement('div');
-        row.className = 'form-row extra-field';
-        row.dataset.extraKey = def.key;
-        var lab = document.createElement('label');
-        lab.textContent = def.label;
-        if (def.required) {
-          var sp = document.createElement('span');
-          sp.className = 'req';
-          sp.textContent = ' *';
-          lab.appendChild(sp);
-        }
-        row.appendChild(lab);
-        var input;
-        if (def.type === 'textarea') {
-          input = document.createElement('textarea');
-          input.rows = 2;
-          input.maxLength = 2000;
-          input.className = 'extra-input';
-          input.value = val === null || val === undefined ? '' : String(val);
-        } else if (def.type === 'number') {
-          input = document.createElement('input');
-          input.type = 'number';
-          input.step = 'any';
-          input.className = 'extra-input';
-          input.value = val === null || val === undefined ? '' : String(val);
-        } else if (def.type === 'select') {
-          input = document.createElement('select');
-          input.className = 'extra-input';
-          var opt0 = document.createElement('option');
-          opt0.value = '';
-          opt0.textContent = '（请选择）';
-          input.appendChild(opt0);
-          (def.options || []).forEach(function (opt) {
+    function renderFieldControls(partial) {
+      partial = partial || {};
+      DROPDOWN_KEYS.forEach(function (key) {
+        var opts = (dropdownConfig && dropdownConfig[key]) || [];
+        var slot = document.querySelector('.field-control[data-slot="' + key + '"]');
+        if (!slot) return;
+        var cur =
+          partial[key] !== undefined && partial[key] !== null ? String(partial[key]) : '';
+        slot.innerHTML = '';
+        var el;
+        if (opts.length > 0) {
+          el = document.createElement('select');
+          el.id = FIELD_IDS[key];
+          var o0 = document.createElement('option');
+          o0.value = '';
+          o0.textContent = '（未选）';
+          el.appendChild(o0);
+          opts.forEach(function (opt) {
             var o = document.createElement('option');
             o.value = opt;
             o.textContent = opt;
-            if (String(val) === String(opt)) o.selected = true;
-            input.appendChild(o);
+            if (String(cur) === String(opt)) o.selected = true;
+            el.appendChild(o);
           });
         } else {
-          input = document.createElement('input');
-          input.type = 'text';
-          input.maxLength = 2000;
-          input.className = 'extra-input';
-          input.value = val === null || val === undefined ? '' : String(val);
+          el = document.createElement('input');
+          el.type = 'text';
+          el.id = FIELD_IDS[key];
+          if (key === 'language') el.maxLength = 32;
+          else if (key === 'version') el.maxLength = 128;
+          else el.maxLength = 64;
+          el.value = cur;
+          if (key === 'language') el.placeholder = '简中 / 日文 / 英文…';
+          else if (key === 'version') el.placeholder = '补充包 / 礼盒 / 版本名';
+          else if (key === 'rarity') el.placeholder = '如：AR / SAR / 闪';
+          else if (key === 'condition') el.placeholder = '如：NM / 白边';
+          else if (key === 'cardStatus') el.placeholder = '手输状态';
         }
-        input.name = 'extra_' + def.key;
-        row.appendChild(input);
-        wrap.appendChild(row);
+        slot.appendChild(el);
       });
-    }
-
-    function collectExtrasFromDom() {
-      var out = {};
-      var wrap = extrasContainer();
-      if (!wrap) return out;
-      wrap.querySelectorAll('.extra-field').forEach(function (row) {
-        var k = row.dataset.extraKey;
-        var inp = row.querySelector('.extra-input');
-        if (!k || !inp) return;
-        out[k] = inp.value;
-      });
-      return out;
     }
 
     function collectPayload() {
@@ -373,46 +340,46 @@
       return {
         name: fName.value.trim(),
         year: fYear.value === '' ? '' : fYear.value,
-        language: fLanguage.value.trim(),
-        version: fVersion.value.trim(),
-        rarity: fRarity.value.trim(),
+        language: fieldVal('fLanguage'),
+        version: fieldVal('fVersion'),
+        rarity: fieldVal('fRarity'),
         purchasePrice: fPurchasePrice.value === '' ? '' : fPurchasePrice.value,
         graded: graded,
         gradingCompany: graded ? fGradingCompany.value.trim() : '',
         gradingNumber: graded ? fGradingNumber.value.trim() : '',
-        condition: fCondition.value.trim(),
+        condition: fieldVal('fCondition'),
         notes: fNotes.value.trim(),
-        cardStatus: fCardStatus.value,
+        cardStatus: fieldVal('fCardStatus'),
         image: imgVal,
         quantity: 1,
-        extras: collectExtrasFromDom(),
       };
     }
 
     function resetFormAfterContinue() {
       var S = {
         year: fYear.value,
-        language: fLanguage.value,
-        version: fVersion.value,
-        rarity: fRarity.value,
+        language: fieldVal('fLanguage'),
+        version: fieldVal('fVersion'),
+        rarity: fieldVal('fRarity'),
         purchasePrice: fPurchasePrice.value,
-        condition: fCondition.value,
-        cardStatus: fCardStatus.value,
+        condition: fieldVal('fCondition'),
+        cardStatus: fieldVal('fCardStatus'),
       };
       fName.value = '';
       fNotes.value = '';
       clearImageFields();
       fYear.value = S.year;
-      fLanguage.value = S.language;
-      fVersion.value = S.version;
-      fRarity.value = S.rarity;
       fPurchasePrice.value = S.purchasePrice;
-      fCondition.value = S.condition;
-      fCardStatus.value = S.cardStatus;
       fGraded.checked = false;
       fGradingCompany.value = '';
       fGradingNumber.value = '';
-      renderExtrasForm(null);
+      renderFieldControls({
+        language: S.language,
+        version: S.version,
+        rarity: S.rarity,
+        condition: S.condition,
+        cardStatus: S.cardStatus,
+      });
       editId.value = '';
       if (cardNoHint) cardNoHint.textContent = '编号将在保存后自动生成';
       syncGradedUi();
@@ -638,8 +605,6 @@
         if (c.cardStatus) metaParts.push('状态：' + c.cardStatus);
         if (c.graded) metaParts.push('评级：' + (c.gradingCompany || '') + ' ' + (c.gradingNumber || ''));
         if (c.condition) metaParts.push('品相：' + c.condition);
-        var exs = extrasBlob(c).trim();
-        if (exs) metaParts.push('扩展：' + exs.slice(0, 120) + (exs.length > 120 ? '…' : ''));
         meta.textContent = metaParts.join(' · ');
         main.appendChild(title);
         main.appendChild(meta);
@@ -675,9 +640,6 @@
       }
       fName.value = card ? card.name || '' : '';
       fYear.value = card && card.year != null ? card.year : '';
-      fLanguage.value = card ? card.language || '' : '';
-      fVersion.value = card ? (card.version || card.set || '') : '';
-      fRarity.value = card ? card.rarity || '' : '';
       fPurchasePrice.value =
         card && card.purchasePrice != null && card.purchasePrice !== ''
           ? card.purchasePrice
@@ -685,8 +647,6 @@
       fGraded.checked = !!(card && card.graded);
       fGradingCompany.value = card ? card.gradingCompany || '' : '';
       fGradingNumber.value = card ? card.gradingNumber || '' : '';
-      fCondition.value = card ? card.condition || '' : '';
-      fCardStatus.value = card ? card.cardStatus || '' : '';
       fNotes.value = card ? card.notes || '' : '';
       clearImageFields();
       if (card && card.image) {
@@ -699,15 +659,33 @@
         }
       }
       syncGradedUi();
-      fetchFieldDefs()
+      fName.focus();
+      fetchFieldDropdowns()
         .then(function () {
-          renderExtrasForm(card);
+          renderFieldControls(
+            card
+              ? {
+                  language: card.language || '',
+                  version: card.version || card.set || '',
+                  rarity: card.rarity || '',
+                  condition: card.condition || '',
+                  cardStatus: card.cardStatus || '',
+                }
+              : {}
+          );
         })
         .catch(function () {
-          renderExtrasForm(card);
-        })
-        .then(function () {
-          fName.focus();
+          renderFieldControls(
+            card
+              ? {
+                  language: card.language || '',
+                  version: card.version || card.set || '',
+                  rarity: card.rarity || '',
+                  condition: card.condition || '',
+                  cardStatus: card.cardStatus || '',
+                }
+              : {}
+          );
         });
     }
 
@@ -716,7 +694,7 @@
       form.reset();
       editId.value = '';
       clearImageFields();
-      renderExtrasForm(null);
+      renderFieldControls({});
       if (cardNoHint) cardNoHint.textContent = '';
       syncGradedUi();
     }
@@ -832,7 +810,7 @@
       reader.readAsText(file, 'UTF-8');
     });
 
-    fetchFieldDefs()
+    fetchFieldDropdowns()
       .then(function () {
         return fetchCards();
       })

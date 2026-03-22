@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const PtcgCard = require('../models/PtcgCard');
-const PtcgFieldDef = require('../models/PtcgFieldDef');
 const { ptcgAuthMiddleware } = require('../middleware/ptcgAuth');
 
 const router = express.Router();
@@ -33,46 +32,9 @@ function toClient(c) {
     image: c.image || '',
     set: c.set || '',
     quantity: c.quantity != null ? c.quantity : 1,
-    extras:
-      c.extras && typeof c.extras === 'object' && !Array.isArray(c.extras) ? { ...c.extras } : {},
     createdAt: iso(c.createdAt),
     updatedAt: iso(c.updatedAt),
   };
-}
-
-async function normalizeExtras(body, adminId) {
-  const defs = await PtcgFieldDef.find({ admin: adminId }).lean();
-  const raw = body.extras && typeof body.extras === 'object' && !Array.isArray(body.extras)
-    ? body.extras
-    : {};
-  const out = {};
-  for (const def of defs) {
-    const v = raw[def.key];
-    const str = v === undefined || v === null ? '' : String(v);
-    const empty = str.trim() === '';
-    if (def.required && empty) {
-      const e = new Error(`${def.label} 为必填`);
-      e.code = 'EXTRA_REQUIRED';
-      throw e;
-    }
-    if (empty) continue;
-    if (def.type === 'number') {
-      const n = Number(str);
-      out[def.key] = Number.isNaN(n) ? 0 : Math.round(n * 1e6) / 1e6;
-    } else if (def.type === 'select') {
-      const opts = (def.options || []).map(String);
-      const pick = str.trim();
-      if (!opts.includes(pick)) {
-        const e = new Error(`${def.label} 选项无效`);
-        e.code = 'EXTRA_INVALID';
-        throw e;
-      }
-      out[def.key] = pick.slice(0, 128);
-    } else {
-      out[def.key] = str.slice(0, 2000);
-    }
-  }
-  return out;
 }
 
 async function getMaxCardNo(adminId) {
@@ -215,17 +177,6 @@ router.post('/cards', ptcgAuthMiddleware, async (req, res) => {
       payload.gradingNumber = '';
     }
 
-    let extras;
-    try {
-      extras = await normalizeExtras(req.body || {}, req.ptcgAdminId);
-    } catch (err) {
-      if (err.code === 'EXTRA_REQUIRED' || err.code === 'EXTRA_INVALID') {
-        return res.status(400).json({ error: err.message });
-      }
-      throw err;
-    }
-    payload.extras = extras;
-
     const card = await createCardWithNextNo(req.ptcgAdminId, payload);
     const obj = card.toObject ? card.toObject() : card;
     res.status(201).json({ card: toClient(obj) });
@@ -265,17 +216,6 @@ router.put('/cards/:id', ptcgAuthMiddleware, async (req, res) => {
       payload.gradingCompany = '';
       payload.gradingNumber = '';
     }
-
-    let extras;
-    try {
-      extras = await normalizeExtras(req.body || {}, req.ptcgAdminId);
-    } catch (err) {
-      if (err.code === 'EXTRA_REQUIRED' || err.code === 'EXTRA_INVALID') {
-        return res.status(400).json({ error: err.message });
-      }
-      throw err;
-    }
-    payload.extras = extras;
 
     const update = { ...payload };
     delete update.name;
@@ -346,8 +286,6 @@ function itemToPayload(item) {
       b.quantity !== undefined && b.quantity !== null && b.quantity !== ''
         ? Math.max(0, parseInt(b.quantity, 10) || 0)
         : 1,
-    extras:
-      b.extras && typeof b.extras === 'object' && !Array.isArray(b.extras) ? { ...b.extras } : {},
   };
 }
 

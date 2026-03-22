@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>PTCG 自定义字段管理</title>
+  <title>PTCG 编辑字段（下拉选项）</title>
   <link rel="stylesheet" href="css/cards.css">
 </head>
 <body>
@@ -16,7 +16,7 @@
       </div>
       <div id="ptcgLoginPanel">
         <h2 class="ptcg-auth-title">PTCG 管理登录</h2>
-        <p class="ptcg-auth-hint">与卡牌页共用同一登录；未登录无法管理字段。</p>
+        <p class="ptcg-auth-hint">与卡牌页共用登录。</p>
         <form id="ptcgLoginForm" autocomplete="on">
           <div class="form-row">
             <label for="ptcgUser">用户名</label>
@@ -56,8 +56,8 @@
   <div id="fieldsApp" class="cards-app hidden">
     <header class="cards-header cards-header-row">
       <div>
-        <h1>自定义字段管理</h1>
-        <p class="cards-sub">在此<strong>新增 / 编辑 / 删除</strong>录入时要填的扩展字段；标识（key）创建后不可改。卡牌录入页会按排序自动出现对应输入框。</p>
+        <h1>编辑字段（下拉选项）</h1>
+        <p class="cards-sub">为<strong>现有录入项</strong>配置下拉框：每行一个选项。某字段<strong>留空</strong>表示该字段仍为<strong>手输文本</strong>。卡状态未保存过时，卡牌页会使用内置默认下拉。</p>
       </div>
       <div class="cards-actions">
         <a href="ptcg.html" class="btn btn-secondary">返回卡牌管理</a>
@@ -65,69 +65,33 @@
       </div>
     </header>
 
-    <section class="cards-toolbar">
-      <button type="button" id="btnAddFieldDef" class="btn btn-primary">新增字段</button>
-    </section>
-
-    <div id="fieldDefFormWrap" class="card-form-wrap hidden">
-      <form id="fieldDefForm" class="card-form">
-        <input type="hidden" id="fdEditId" value="">
-        <div class="form-row">
-          <label>显示名称 <span class="req">*</span></label>
-          <input type="text" id="fdLabel" required maxlength="64" placeholder="如：购入渠道">
-        </div>
-        <div class="form-row" id="fdKeyRow">
-          <label>标识（key）<span class="req">*</span></label>
-          <input type="text" id="fdKey" maxlength="32" pattern="[a-z][a-z0-9_]*" placeholder="英文小写+下划线，如 purchase_shop">
-          <p class="form-hint">仅新建时可填；保存后不可修改。</p>
-        </div>
-        <div class="form-row form-row-half">
-          <div>
-            <label>类型</label>
-            <select id="fdType">
-              <option value="text">单行文本</option>
-              <option value="textarea">多行文本</option>
-              <option value="number">数字</option>
-              <option value="select">下拉选择</option>
-            </select>
-          </div>
-          <div>
-            <label>排序（数字越小越靠前）</label>
-            <input type="number" id="fdOrder" step="1" value="0">
-          </div>
-        </div>
-        <div class="form-row">
-          <label class="label-inline">
-            <input type="checkbox" id="fdRequired"> 必填
-          </label>
-        </div>
-        <div class="form-row" id="fdOptionsRow">
-          <label>下拉选项（每行一项，或英文逗号分隔）</label>
-          <textarea id="fdOptions" rows="4" maxlength="4000" placeholder="选项A&#10;选项B"></textarea>
-        </div>
-        <div class="form-btns">
-          <button type="submit" class="btn btn-primary">保存</button>
-          <button type="button" id="btnFdCancel" class="btn btn-ghost">取消</button>
-        </div>
-      </form>
-    </div>
-
-    <section class="cards-list-section">
-      <p id="fdEmpty" class="cards-empty hidden">暂无自定义字段，点击「新增字段」添加。</p>
-      <table class="ptcg-field-def-list" id="fdTable">
-        <thead>
-          <tr>
-            <th>显示名</th>
-            <th>标识</th>
-            <th>类型</th>
-            <th>排序</th>
-            <th>必填</th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody id="fdTableBody"></tbody>
-      </table>
-    </section>
+    <form id="dropdownForm" class="card-form-wrap">
+      <div class="form-row">
+        <label>卡状态</label>
+        <textarea id="taCardStatus" rows="5" maxlength="8000" placeholder="在库&#10;已售&#10;出借"></textarea>
+        <p class="form-hint">留空则卡牌页使用系统默认选项；若只填「其他」等也可完全自定义。</p>
+      </div>
+      <div class="form-row">
+        <label>语言</label>
+        <textarea id="taLanguage" rows="4" maxlength="8000" placeholder="简中&#10;日文&#10;英文"></textarea>
+      </div>
+      <div class="form-row">
+        <label>版本</label>
+        <textarea id="taVersion" rows="4" maxlength="8000" placeholder="朱紫&#10;剑盾"></textarea>
+      </div>
+      <div class="form-row">
+        <label>稀有度</label>
+        <textarea id="taRarity" rows="4" maxlength="8000" placeholder="AR&#10;SAR"></textarea>
+      </div>
+      <div class="form-row">
+        <label>品相</label>
+        <textarea id="taCondition" rows="4" maxlength="8000" placeholder="NM&#10;LP"></textarea>
+      </div>
+      <div class="form-btns">
+        <button type="submit" class="btn btn-primary">保存全部</button>
+      </div>
+      <p id="fdSaveMsg" class="ptcg-login-err" style="min-height:1.25rem;color:var(--success)" aria-live="polite"></p>
+    </form>
   </div>
 
   <script src="js/ptcg-fields-app.js"></script>

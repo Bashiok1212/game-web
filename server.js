@@ -20,7 +20,7 @@ const mailRoutes = require('./routes/mail');
 const adminRoutes = require('./routes/admin');
 const ptcgRoutes = require('./routes/ptcg');
 const ptcgCardsRoutes = require('./routes/ptcgCards');
-const ptcgFieldDefsRoutes = require('./routes/ptcgFieldDefs');
+const ptcgFieldDropdownsRoutes = require('./routes/ptcgFieldDropdowns');
 const miscRoutes = require('./routes/misc');
 const { authMiddleware, JWT_SECRET } = require('./middleware/auth');
 const Character = require('./models/Character');
@@ -83,7 +83,7 @@ app.use(cors(corsOpts));
 
 app.use('/api/ptcg', ptcgRoutes);
 app.use('/api/ptcg', ptcgCardsRoutes);
-app.use('/api/ptcg', ptcgFieldDefsRoutes);
+app.use('/api/ptcg', ptcgFieldDropdownsRoutes);
 app.use('/api/admin', adminRoutes);
 async function discardPlayerItemHandler(req, res) {
   const quantity = parseInt(req.query?.quantity ?? req.body?.quantity ?? 0, 10);

@@ -135,7 +135,7 @@
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/ptcg/cards` | 当前管理员的卡牌列表 |
-| POST | `/api/ptcg/cards` | 新增单条（见下方字段说明） |
+| POST | `/api/ptcg/cards` | 新增单条（见下方字段说明）；成功后**自动写入一条入库登记**（备注「添加卡牌」） |
 | PUT | `/api/ptcg/cards/:id` | 更新（同字段；**不可改** `cardNo`） |
 | DELETE | `/api/ptcg/cards/:id` | 删除 |
 | POST | `/api/ptcg/cards/import` | 批量导入（body：`{ "items": [ ... ] }` 或直接数组，与导出 JSON 兼容） |

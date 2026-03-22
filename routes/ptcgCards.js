@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const PtcgCard = require('../models/PtcgCard');
+const PtcgStockMovement = require('../models/PtcgStockMovement');
 const { ptcgAuthMiddleware } = require('../middleware/ptcgAuth');
 
 const router = express.Router();
@@ -173,6 +174,17 @@ router.post('/cards', ptcgAuthMiddleware, async (req, res) => {
     }
 
     const card = await createCardWithNextNo(req.ptcgAdminId, payload);
+    const oid = new mongoose.Types.ObjectId(req.ptcgAdminId);
+    try {
+      await PtcgStockMovement.create({
+        admin: oid,
+        card: card._id,
+        type: 'in',
+        note: '添加卡牌',
+      });
+    } catch (movErr) {
+      console.error('ptcg default stock-in on create', movErr);
+    }
     const obj = card.toObject ? card.toObject() : card;
     res.status(201).json({ card: toClient(obj) });
   } catch (e) {

@@ -950,9 +950,34 @@ body {
   font-size: 0.88rem;
 }
 
-.version-meta-row .vm-rm {
+.version-meta-row-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.25rem;
   flex: 0 0 auto;
+  align-self: flex-end;
+  align-items: center;
   margin-bottom: 0.15rem;
+}
+
+.version-meta-row-actions .btn {
+  min-width: 1.85rem;
+  padding: 0.25rem 0.35rem;
+}
+
+.lang-version-order {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin-top: 1.65rem;
+}
+
+.lang-version-order .btn {
+  min-width: 2rem;
+  padding: 0.2rem 0.35rem;
 }
 
 .btn-add-ver-global {

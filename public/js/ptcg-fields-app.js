@@ -132,6 +132,40 @@
     return { name: '', year: '', code: '', maxNo: '' };
   }
 
+  function moveVersionRowUp(row) {
+    var p = row.parentNode;
+    if (!p) return;
+    var prev = row.previousElementSibling;
+    if (prev && prev.classList.contains('version-meta-row')) {
+      p.insertBefore(row, prev);
+    }
+  }
+
+  function moveVersionRowDown(row) {
+    var p = row.parentNode;
+    if (!p) return;
+    var next = row.nextElementSibling;
+    if (next && next.classList.contains('version-meta-row')) {
+      p.insertBefore(next, row);
+    }
+  }
+
+  function moveLangRowUp(row) {
+    if (!pairsContainer || !row || !row.classList.contains('lang-version-row')) return;
+    var prev = row.previousElementSibling;
+    if (prev && prev.classList.contains('lang-version-row')) {
+      pairsContainer.insertBefore(row, prev);
+    }
+  }
+
+  function moveLangRowDown(row) {
+    if (!pairsContainer || !row || !row.classList.contains('lang-version-row')) return;
+    var next = row.nextElementSibling;
+    if (next && next.classList.contains('lang-version-row')) {
+      pairsContainer.insertBefore(next, row);
+    }
+  }
+
   function addVersionMetaRow(container, entry) {
     if (!container) return;
     entry = entry || {};
@@ -160,16 +194,32 @@
       '<input type="number" class="vm-max" min="1" max="999999" step="1" placeholder="如：207">' +
       '</div>' +
       '</div>' +
-      '<button type="button" class="btn btn-ghost btn-sm vm-rm" title="移除此版本">×</button>';
+      '<div class="version-meta-row-actions">' +
+      '<button type="button" class="btn btn-ghost btn-sm vm-up" title="上移">↑</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm vm-down" title="下移">↓</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm vm-rm" title="移除此版本">×</button>' +
+      '</div>';
     var inpN = row.querySelector('.vm-name');
     var inpY = row.querySelector('.vm-year');
     var inpC = row.querySelector('.vm-code');
     var inpM = row.querySelector('.vm-max');
     var btnRm = row.querySelector('.vm-rm');
+    var btnUp = row.querySelector('.vm-up');
+    var btnDown = row.querySelector('.vm-down');
     if (inpN) inpN.value = name;
     if (inpY) inpY.value = year;
     if (inpC) inpC.value = code;
     if (inpM) inpM.value = maxNo;
+    if (btnUp) {
+      btnUp.addEventListener('click', function () {
+        moveVersionRowUp(row);
+      });
+    }
+    if (btnDown) {
+      btnDown.addEventListener('click', function () {
+        moveVersionRowDown(row);
+      });
+    }
     if (btnRm) {
       btnRm.addEventListener('click', function () {
         row.remove();
@@ -217,9 +267,13 @@
       '<input type="text" class="lang-version-input-lang" maxlength="128" placeholder="如：简中" value="">' +
       '</div>' +
       '<div class="lang-version-field lang-version-field--grow">' +
-      '<label>该语言的版本（名称 · 年份 · 扩展编号 · 编号上限）</label>' +
+      '<label>该语言的版本（名称 · 年份 · 扩展编号 · 编号上限；↑↓ 调整顺序）</label>' +
       '<div class="version-meta-rows"></div>' +
       '<button type="button" class="btn btn-secondary btn-sm btn-add-ver-meta">+ 添加版本</button>' +
+      '</div>' +
+      '<div class="lang-version-order">' +
+      '<button type="button" class="btn btn-ghost btn-sm lang-row-up" title="上移语言">↑</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm lang-row-down" title="下移语言">↓</button>' +
       '</div>' +
       '<button type="button" class="btn btn-ghost btn-sm lang-version-remove" title="移除此语言行">×</button>' +
       '</div>';
@@ -227,6 +281,8 @@
     var verList = row.querySelector('.version-meta-rows');
     var btnAddVer = row.querySelector('.btn-add-ver-meta');
     var btnRm = row.querySelector('.lang-version-remove');
+    var btnLangUp = row.querySelector('.lang-row-up');
+    var btnLangDown = row.querySelector('.lang-row-down');
     if (inp) inp.value = lang;
     var norm = versions.map(normalizeVersionEntryLoad).filter(function (e) {
       return e.name;
@@ -243,6 +299,16 @@
         addVersionMetaRow(verList, {});
       });
     }
+    if (btnLangUp) {
+      btnLangUp.addEventListener('click', function () {
+        moveLangRowUp(row);
+      });
+    }
+    if (btnLangDown) {
+      btnLangDown.addEventListener('click', function () {
+        moveLangRowDown(row);
+      });
+    }
     if (btnRm) {
       btnRm.addEventListener('click', function () {
         row.remove();
@@ -252,6 +318,35 @@
       });
     }
     pairsContainer.appendChild(row);
+  }
+
+  /** 按保存时的 language 数组顺序排列语言键，便于与上移/下移一致 */
+  function orderedLangKeys(vbl, preferredOrder) {
+    if (!vbl || typeof vbl !== 'object' || Array.isArray(vbl)) return [];
+    var vblKeys = Object.keys(vbl);
+    if (!vblKeys.length) return [];
+    var preferred = Array.isArray(preferredOrder)
+      ? preferredOrder
+          .map(function (x) {
+            return String(x).trim();
+          })
+          .filter(Boolean)
+      : [];
+    var seen = {};
+    var keys = [];
+    preferred.forEach(function (k) {
+      if (vblKeys.indexOf(k) >= 0 && !seen[k]) {
+        keys.push(k);
+        seen[k] = true;
+      }
+    });
+    vblKeys.forEach(function (k) {
+      if (!seen[k]) {
+        keys.push(k);
+        seen[k] = true;
+      }
+    });
+    return keys;
   }
 
   function loadRawIntoForm(raw) {
@@ -270,7 +365,7 @@
     var vbl = raw.versionByLanguage && typeof raw.versionByLanguage === 'object' && !Array.isArray(raw.versionByLanguage)
       ? raw.versionByLanguage
       : null;
-    var keys = vbl && Object.keys(vbl).length ? Object.keys(vbl) : [];
+    var keys = orderedLangKeys(vbl, raw.language);
     if (keys.length) {
       keys.forEach(function (k) {
         var arr = Array.isArray(vbl[k]) ? vbl[k] : [];
